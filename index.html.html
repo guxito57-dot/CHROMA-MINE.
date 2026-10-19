@@ -1,0 +1,1259 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="CHROMA MINE: juego gratuito de estrategia, colores y bombas ocultas. Supera 25 niveles, descubre casillas especiales y bate tu récord desde el navegador.">
+<meta name="theme-color" content="#0a1020">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>CHROMA MINE — Juego gratis de estrategia, colores y bombas</title>
+<style>
+:root{
+  --bg:#0b1020;--panel:#141d31;--panel2:#19243a;--gold:#f6c85f;--gold2:#a66b19;
+  --ink:#edf4ff;--muted:#9baac4;--line:#2b3954;--green:#45df9b;--red:#ff647c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% -10%,#243858 0%,#11192b 42%,#080c17 100%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{min-height:100vh;min-height:100dvh;display:flex;justify-content:center;padding:16px}
+html{overflow-x:hidden}
+button{font:inherit;max-width:100%}
+button.cell{min-width:0;min-height:0}
+button.btn{font-size:13px}
+.app{width:min(1180px,100%);display:flex;flex-direction:column;gap:13px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#ffe58b,#dc8b2f);display:grid;place-items:center;color:#251b09;font-size:26px;box-shadow:0 6px 24px #edac3840;border:1px solid #fff1ad}
+h1{font-size:clamp(20px,3vw,30px);line-height:1;margin:0;letter-spacing:.12em;font-weight:950}
+.subtitle{font-size:11px;color:#a9bad4;letter-spacing:.18em;margin-top:6px;text-transform:uppercase}
+.record{display:flex;align-items:center;gap:15px;padding:10px 16px;border-radius:13px;background:linear-gradient(110deg,#f9d77c,#e5a832 55%,#bd781c);color:#4c3007;border:1px solid #ffe8a2;box-shadow:0 7px 24px #d38e2438;min-width:205px}
+.record{position:relative;isolation:isolate;animation:recordGlow 2.2s ease-in-out infinite}
+.record:before{content:"";position:absolute;inset:-3px;border-radius:15px;border:1px solid #fff8a6;box-shadow:0 0 7px #fff16b,0 0 17px #ffbf36,0 0 28px #ff7b35;pointer-events:none;z-index:-1;animation:recordHalo 1.8s ease-in-out infinite}
+.record:after{content:"✦  ✨  ✧";position:absolute;right:-7px;top:-12px;font-size:15px;letter-spacing:3px;color:#fff;white-space:nowrap;text-shadow:0 0 5px #fff,0 0 12px #ff4de1,0 0 18px #4dfcff;pointer-events:none;animation:recordFireworks 1.6s ease-in-out infinite}
+@keyframes recordGlow{0%,100%{filter:brightness(1);box-shadow:0 7px 24px #d38e2438,0 0 9px #ffdb57}50%{filter:brightness(1.18);box-shadow:0 7px 28px #ff9f2f77,0 0 22px #ffec69,0 0 32px #ff4dd2}}
+@keyframes recordHalo{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.015)}}
+@keyframes recordFireworks{0%,100%{opacity:.55;transform:translateY(2px) scale(.88) rotate(-4deg)}50%{opacity:1;transform:translateY(-4px) scale(1.18) rotate(6deg)}}
+.streak-mini{display:flex;align-items:center;gap:7px;margin-top:7px;padding:5px 8px;border-radius:8px;background:linear-gradient(90deg,#102c36,#191b37);border:1px solid #28d9e777;color:#7cf7f0;font-size:10px;box-shadow:inset 0 0 10px #27eaff16,0 0 8px #28d9e722}
+.streak-mini span{font-size:9px;letter-spacing:.08em;font-weight:900}.streak-mini b{font-size:12px;color:#fff;text-shadow:0 0 7px #20f7ff,0 0 13px #20f7ff}.streak-mini small{margin-left:auto;font-size:9px;color:#b7ff8a;text-shadow:0 0 6px #85ff72}
+
+.record-label{font-weight:950;letter-spacing:.12em;font-size:12px}
+.record-value{font-size:26px;line-height:1;font-weight:1000;margin-left:auto}
+.record small{display:block;font-size:9px;letter-spacing:.08em;margin-top:4px;opacity:.8}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.stat{background:linear-gradient(145deg,#19243a,#121b2e);border:1px solid var(--line);border-radius:13px;padding:10px 13px;min-width:0}
+.stat .label{font-size:10px;color:var(--muted);letter-spacing:.12em;font-weight:800}
+.stat .value{font-size:clamp(17px,2.5vw,24px);font-weight:900;margin-top:3px;white-space:nowrap}
+.stat .value.gold{color:var(--gold)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 285px;gap:13px;align-items:start;min-width:0}
+.board-panel,.side-panel{min-width:0}
+.board-wrap{width:100%;max-width:min(100%,680px);aspect-ratio:1;isolation:isolate}
+.board{width:100%;height:100%;aspect-ratio:1;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));}
+.cell{width:100%;height:100%;min-width:0;min-height:0;max-width:100%;max-height:100%;display:block;appearance:none;-webkit-appearance:none;font-size:12px;line-height:1;padding:0;margin:0;flex:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;width:auto;max-width:100%;min-height:44px;white-space:normal;text-align:center;line-height:1.2;flex:0 0 auto}
+.side-panel > .btn.full{display:flex;width:100%;min-width:0}
+.overlay .btn{width:auto;min-width:190px;max-width:100%}
+.board-panel,.side-panel{background:linear-gradient(145deg,#172238ee,#10182aee);border:1px solid #2a3955;border-radius:19px;box-shadow:0 18px 55px #0003}
+.board-panel{padding:clamp(10px,2vw,20px);min-width:0}
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.board-title{font-size:13px;font-weight:950;letter-spacing:.13em}
+.board-caption{font-size:11px;color:var(--muted);margin-top:4px}
+.live{display:flex;align-items:center;gap:6px;font-size:10px;color:#9feac8;letter-spacing:.12em;font-weight:850}
+.live:before{content:"";width:7px;height:7px;border-radius:50%;background:#43e69a;box-shadow:0 0 12px #43e69a}
+.board-wrap{width:min(100%,680px);margin:0 auto;position:relative}
+.board{width:100%;aspect-ratio:1;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));grid-template-rows:repeat(10,minmax(0,1fr));gap:clamp(2px,.48vw,5px);padding:7px;border-radius:13px;background:#080e1a;border:1px solid #35435c;box-shadow:inset 0 0 0 1px #ffffff08,0 12px 30px #0003}
+.cell{position:relative;min-width:0;min-height:0;border:1px solid #ffffff32;border-radius:clamp(3px,.6vw,8px);padding:0;cursor:pointer;overflow:hidden;box-shadow:inset 0 1px 0 #ffffff3d,inset 0 -3px 0 #00000020,0 2px 3px #0002;transition:transform .08s,filter .12s,border-color .12s}
+.cell:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,#ffffff30,transparent 48%,#00000010);pointer-events:none}
+.cell:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-1px);border-color:#fff9}
+.cell:active:not(:disabled){transform:scale(.94)}
+.cell:disabled{cursor:default}
+.cell.safe{border:2px solid #e8fff1;filter:saturate(.68) brightness(.8)}
+.cell.safe:after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:white;font-size:clamp(10px,1.6vw,19px);font-weight:1000;text-shadow:0 2px 4px #0008}
+.cell.boom{animation:boomCell .48s ease-out forwards;border:2px solid white;z-index:2}
+.cell.hint-cell{animation:hintPulse .85s infinite;border:3px solid #fff;z-index:1}
+.cell.mystery-cell{background:linear-gradient(145deg,#d8b4fe,#7c3aed)!important;border:2px solid #f3e8ff;box-shadow:inset 0 0 0 2px #6d28d9,0 0 9px #a855f766;color:#fff}
+.cell.mystery-cell .mystery-label{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(12px,2vw,22px);font-weight:1000;color:#fff;text-shadow:0 2px 5px #3b0764;pointer-events:none}
+.cell.immune-cell{border:2px solid #fff4a8;box-shadow:inset 0 0 0 2px #9d7b2b,0 0 10px #ffe36a99;background:linear-gradient(135deg,#fff1a8,#c88a20)!important;color:#271a00}
+.cell.immune-cell .immune-label{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(7px,1.15vw,13px);font-weight:1000;letter-spacing:-.04em;color:#2c2000;text-shadow:0 1px #fff8;pointer-events:none}
+@keyframes hintPulse{0%,100%{box-shadow:0 0 0 0 #fff8,0 0 7px 2px #fff9;filter:brightness(1)}50%{box-shadow:0 0 0 5px #f9d76a88,0 0 22px 8px #fff;filter:brightness(1.55)}}
+@keyframes boomCell{0%{transform:scale(1);filter:brightness(1)}30%{transform:scale(1.22);filter:brightness(2)}100%{transform:scale(.75);filter:grayscale(.8) brightness(.35)}}
+.cell .coord{position:absolute;bottom:2px;right:3px;font-size:clamp(6px,.65vw,9px);color:#fff9;text-shadow:0 1px 2px #0007;font-weight:800;opacity:0}
+.cell:hover .coord{opacity:1}
+.side-panel{padding:17px;display:flex;flex-direction:column;gap:14px}
+.section-label{font-size:10px;letter-spacing:.16em;color:#9babc4;font-weight:900}
+.level-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.level-num{font-size:32px;font-weight:1000;line-height:1}
+.level-target{font-size:13px;color:var(--gold);font-weight:900}
+.progress{height:8px;border-radius:99px;background:#080e1a;border:1px solid #34415a;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#46e6a2,#d3ff9b);border-radius:99px;transition:width .18s}
+.message{min-height:82px;padding:12px;border-radius:12px;background:#0b1323;border:1px solid #2a3955;display:flex;flex-direction:column;justify-content:center;gap:7px}
+.message-title{font-weight:950;font-size:15px}
+.message-text{font-size:12px;line-height:1.5;color:#b7c5dc}
+.message.good{border-color:#2f916b;background:#10261f}
+.message.bad{border-color:#b9485d;background:#2b1420}
+.message.hint{border-color:#b78b31;background:#282115}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-weight:950;cursor:pointer;transition:transform .1s,filter .1s}
+.btn:active{transform:scale(.98)}
+.btn-gold{color:#362308;background:linear-gradient(110deg,#ffe58c,#e8ae3f);box-shadow:0 5px 0 #8f5d19}
+.btn-ghost{color:#dce7fa;background:#202d45;border:1px solid #34435e}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rule{display:flex;align-items:center;gap:8px;background:#111b2d;border:1px solid #283750;border-radius:10px;padding:9px}
+.rule-icon{font-size:18px}
+.rule b{display:block;font-size:12px}
+.rule small{display:block;color:#9baac4;font-size:10px;margin-top:2px}
+.tip{font-size:11px;color:#9eafc9;line-height:1.55}
+.legend{display:flex;flex-wrap:wrap;gap:5px}
+.swatch{width:15px;height:15px;border:1px solid #ffffff55;border-radius:4px;box-shadow:inset 0 1px #ffffff55}
+.overlay{position:absolute;inset:0;width:100%;height:100%;border-radius:13px;background:#07101de8;backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;text-align:center;padding:22px;z-index:5}
+.overlay[hidden]{display:none}
+.overlay-card{max-width:370px}
+.overlay-icon{font-size:54px;filter:drop-shadow(0 8px 20px #0008)}
+.overlay h2{font-size:clamp(24px,4vw,38px);margin:10px 0 8px;font-weight:1000;letter-spacing:.06em}
+.overlay p{font-size:13px;line-height:1.6;color:#c1cde0;margin:0 0 18px}
+.overlay .btn{min-width:190px}
+.footer{text-align:center;font-size:10px;color:#65758f;letter-spacing:.08em;padding:2px 0 5px}
+#burst{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:hidden;border-radius:13px}
+.spark{position:absolute;width:9px;height:9px;border-radius:3px;animation:spark .6s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) rotate(220deg) scale(.1);opacity:0}}
+@media(max-width:850px){body{padding:9px}.main{grid-template-columns:minmax(0,1fr) 235px;gap:9px}.side-panel{padding:12px;gap:10px}.stats{gap:6px}.stat{padding:8px}.record{min-width:175px;padding:8px 12px}.board-panel{overflow:hidden}.board-wrap{width:100%}}
+@media(max-width:650px){body{padding:8px}.app{gap:9px}.main{grid-template-columns:minmax(0,1fr)}.side-panel{display:grid;grid-template-columns:1fr 1fr;align-items:start}.side-panel .full{grid-column:1/-1}.board-panel{padding:8px;overflow:hidden}.board-wrap{width:100%;max-width:100%;aspect-ratio:1}.board{gap:3px;padding:5px;grid-template-columns:repeat(10,minmax(0,1fr));;grid-template-rows:repeat(10,minmax(0,1fr));}.top{align-items:flex-start}.record{min-width:165px}.subtitle{font-size:9px}.stat .label{font-size:9px}.cell .coord{display:none}}
+@media(max-width:390px){.side-panel{grid-template-columns:1fr}.side-panel .full{grid-column:auto}.record{min-width:145px;gap:8px}.record-value{font-size:22px}.logo{width:40px;height:40px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.board{gap:2px;padding:4px;grid-template-columns:repeat(10,minmax(0,1fr));;grid-template-rows:repeat(10,minmax(0,1fr));}.cell{border-radius:3px}}
+
+/* Menú principal, logros y estadísticas */
+.overlay-card{background:linear-gradient(145deg,#202e4b,#10182a 70%);border:1px solid #6a7fa8;box-shadow:0 0 0 1px #ffffff0b,inset 0 0 32px #40d9ff0b,0 20px 65px #0009;position:relative;overflow:hidden}
+.overlay-card:before{content:"";position:absolute;inset:-1px;background:linear-gradient(115deg,transparent 15%,#44eaff13 38%,#ff4df21a 52%,transparent 75%);pointer-events:none}
+.overlay-card h2{text-shadow:0 0 12px #59eaff55,0 0 25px #a34dff35;letter-spacing:.06em}
+.menu-actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+.menu-actions .btn{min-width:130px;font-size:12px}
+.btn-neon{color:#e7f8ff;background:linear-gradient(110deg,#203e5a,#30315b);border:1px solid #58dfff88;box-shadow:0 0 15px #28dfff18,inset 0 0 12px #ad52ff12}
+.modal{position:fixed;inset:0;z-index:50;background:#050915d9;backdrop-filter:blur(8px);display:grid;place-items:center;padding:18px}
+.modal[hidden]{display:none!important}
+.modal-card{width:min(760px,100%);max-height:min(82vh,800px);overflow:auto;background:linear-gradient(145deg,#1a2944,#0c1425);border:1px solid #526b91;border-radius:18px;padding:18px;box-shadow:0 20px 70px #000b,0 0 30px #36d8ff12}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-18px;background:#17243af5;padding:4px 0 12px;z-index:2}
+.modal-head h2{font-size:20px;margin:0;letter-spacing:.06em}
+.achievement-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.achievement{padding:10px;border:1px solid #354763;border-radius:11px;background:linear-gradient(145deg,#172238,#101827);min-width:0}
+.achievement.unlocked{border-color:#f3c95f;background:linear-gradient(145deg,#45391e,#1a2230);box-shadow:inset 0 0 15px #ffcb4c12,0 0 12px #ffcb4c12}
+.achievement-title{font-size:12px;font-weight:950;color:#f4d47a}.achievement.locked .achievement-title{color:#9ca9bf}
+.achievement-desc{font-size:10px;line-height:1.4;color:#bac7da;margin-top:4px}.achievement-status{font-size:9px;color:#9feac8;margin-top:6px;font-weight:900;letter-spacing:.08em}
+.statistics-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.stat-card{background:#101a2c;border:1px solid #34435d;border-radius:11px;padding:12px;min-width:0}
+.stat-card span{display:block;color:#9cacc5;font-size:10px;line-height:1.4}.stat-card strong{display:block;font-size:23px;color:#ffe082;margin-top:4px;overflow-wrap:anywhere}
+.achievement-toast{position:fixed;top:18px;left:50%;transform:translate(-50%,-150%);opacity:0;z-index:70;width:min(540px,calc(100% - 24px));padding:12px 16px;border-radius:13px;background:linear-gradient(100deg,#fff0a0,#e9b638 48%,#ffe78b);color:#382705;border:1px solid #fff5bc;box-shadow:0 0 0 2px #ffdc6755,0 0 28px #ffc83d99,0 12px 30px #0008;transition:transform .35s ease,opacity .35s ease;pointer-events:none}
+.achievement-toast.show{transform:translate(-50%,0);opacity:1}
+.achievement-toast b{display:block;font-size:13px;font-weight:1000;letter-spacing:.06em}.achievement-toast span{display:block;font-size:11px;margin-top:3px;line-height:1.4}
+@media(max-width:600px){.achievement-list{grid-template-columns:1fr}.statistics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.modal-card{padding:13px}.modal-head{top:-13px}}
+
+
+/* CHROMA MINE: acabado visual premium + intro cinematográfica */
+.app{position:relative}
+.top{padding:10px 12px;border:1px solid #314565;border-radius:18px;background:linear-gradient(110deg,#111d31dd,#17243add);box-shadow:0 12px 35px #0005,inset 0 1px #ffffff0a}
+.logo{position:relative;isolation:isolate;box-shadow:0 0 0 4px #ffd56a12,0 0 22px #ffb52d55,0 0 38px #ff8d2440;animation:logoFloat 3.4s ease-in-out infinite}
+.logo:after{content:"";position:absolute;inset:-6px;border:1px solid #ffdb7a70;border-radius:19px;animation:logoRing 3s ease-in-out infinite}
+.stat,.board-panel,.side-panel{box-shadow:0 12px 36px #0003,inset 0 1px #ffffff08}
+.board-panel,.side-panel{border-color:#354a6b}
+.board-title{letter-spacing:.12em;text-shadow:0 0 14px #4adfff25}
+.btn{position:relative;overflow:hidden}
+.btn:before{content:"";position:absolute;inset:0;transform:translateX(-130%);background:linear-gradient(100deg,transparent,#ffffff20,transparent);transition:transform .5s;pointer-events:none}
+.btn:hover:before{transform:translateX(130%)}
+.btn-gold{box-shadow:0 5px 0 #8f5d19,0 0 18px #ffbf3650}
+.btn-neon{box-shadow:0 0 0 1px #58dfff10,0 0 18px #28dfff20,inset 0 0 12px #ad52ff12}
+.overlay{background:radial-gradient(ellipse at 50% 10%,#263d60f0,#08101cf2 68%);backdrop-filter:blur(12px)}
+.overlay-card{width:min(420px,100%);padding:28px 22px 22px;border-radius:22px;background:linear-gradient(145deg,#202f4d 0%,#111b30 58%,#0c1322 100%);border-color:#7190bd;box-shadow:0 0 0 1px #8feaff16,inset 0 1px #ffffff14,0 25px 80px #000b,0 0 42px #31d9ff16}
+.overlay-card:after{content:"";position:absolute;inset:7px;border:1px solid #6ee7ff20;border-radius:16px;pointer-events:none}
+.overlay-icon{display:inline-grid;place-items:center;width:86px;height:86px;border-radius:24px;background:linear-gradient(145deg,#ffe99b,#d78d28);color:#211604;box-shadow:0 0 0 6px #f8c75f0b,0 0 30px #ffbd4b45,inset 0 1px #fff9;animation:logoFloat 3s ease-in-out infinite}
+.overlay h2{font-size:clamp(25px,4vw,36px);text-shadow:0 0 16px #64eaff50,0 0 36px #8a4dff30}
+.overlay p{max-width:330px;margin-left:auto;margin-right:auto}
+.menu-actions{gap:8px}
+.menu-actions .btn{min-width:125px}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes logoRing{0%,100%{opacity:.3;transform:scale(.96)}50%{opacity:.8;transform:scale(1.06)}}
+.intro-screen{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;padding:20px;background:radial-gradient(ellipse at 50% 38%,#172e51 0%,#0a1326 48%,#040711 100%);color:#f4f8ff}
+.intro-screen[hidden]{display:none!important}
+.intro-screen:before{content:"";position:absolute;inset:-20%;background:repeating-linear-gradient(0deg,transparent 0 39px,#6cdfff0b 40px),repeating-linear-gradient(90deg,transparent 0 39px,#6cdfff0b 40px);transform:perspective(600px) rotateX(58deg) scale(1.5) translateY(20%);transform-origin:center bottom;animation:introGrid 10s linear infinite;mask-image:linear-gradient(transparent,#000 35%,#000 80%,transparent)}
+.intro-screen:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(transparent 50%,#00000013 50%);background-size:100% 4px;opacity:.4}
+.intro-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 20%,#02040bcc 100%);pointer-events:none}
+.intro-content{position:relative;z-index:1;width:min(640px,100%);text-align:center;animation:introAppear .9s cubic-bezier(.2,.8,.2,1) both}
+.intro-kicker{font-size:10px;font-weight:900;letter-spacing:.42em;color:#78eaff;text-transform:uppercase;text-shadow:0 0 12px #39dfff88}
+.intro-emblem{width:112px;height:112px;margin:22px auto 24px;position:relative;display:grid;place-items:center;border:1px solid #ffdc7c;border-radius:30px;transform:rotate(45deg);background:linear-gradient(145deg,#ffe68e,#df922b 65%,#8f4c1d);box-shadow:0 0 0 8px #f9c95f0c,0 0 34px #ffb73560,0 0 85px #ff8d2b24,inset 0 1px #fff9}
+.intro-emblem span{transform:rotate(-45deg);font-size:54px;color:#261803;text-shadow:0 2px #fff6}
+.intro-title{font-size:clamp(38px,8vw,76px);line-height:.95;font-weight:1000;letter-spacing:.06em;margin:0;text-shadow:0 0 10px #61eaff88,0 0 28px #4edbff45,0 5px 0 #101a31}
+.intro-title em{font-style:normal;color:#f8d36c;text-shadow:0 0 12px #ffca4f99,0 0 32px #ff9f3580}
+.intro-tagline{margin:17px 0 0;color:#b7c9e3;font-size:clamp(11px,2vw,14px);letter-spacing:.19em;font-weight:800}
+.intro-rule{height:1px;width:min(330px,80%);margin:25px auto;background:linear-gradient(90deg,transparent,#62eaff99,#ffd66a99,transparent)}
+.intro-desc{max-width:390px;margin:0 auto 25px;color:#9eafcb;font-size:13px;line-height:1.7}
+.intro-continue{min-width:235px;animation:continuePulse 1.8s ease-in-out infinite}
+.intro-hint{margin-top:17px;font-size:10px;font-weight:900;letter-spacing:.2em;color:#6e89ad}
+.intro-hint kbd{display:inline-block;padding:4px 9px;border:1px solid #6b8db4;border-radius:6px;color:#fff;background:#172842;box-shadow:0 3px 0 #08101d;margin-right:5px}
+.intro-footer{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.22em;color:#526b8e}
+@keyframes introAppear{from{opacity:0;transform:translateY(18px) scale(.98);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@keyframes introGrid{from{background-position:0 0,0 0}to{background-position:0 80px,80px 0}}
+@keyframes continuePulse{0%,100%{filter:brightness(1);box-shadow:0 5px 0 #8f5d19,0 0 14px #ffbd3640}50%{filter:brightness(1.13);box-shadow:0 5px 0 #8f5d19,0 0 28px #ffbd3680}}
+.intro-screen.leaving{animation:introLeave .42s ease-in forwards}
+@keyframes introLeave{to{opacity:0;transform:scale(1.025);visibility:hidden}}
+@media(max-width:520px){.intro-emblem{width:82px;height:82px;border-radius:23px;margin:17px auto 21px}.intro-emblem span{font-size:42px}.intro-desc{font-size:12px}.intro-title{letter-spacing:.025em}.top{padding:8px}.overlay-card{padding:23px 15px 18px}}
+@media(prefers-reduced-motion:reduce){.intro-screen:before,.intro-emblem,.intro-content,.intro-continue,.logo,.logo:after{animation:none!important}}
+
+
+/* Pulido adicional: accesos más grandes, vitrinas de estadísticas/logros y racha X1 */
+.menu-actions .btn,
+#achievementsSideBtn,#statisticsSideBtn{
+  min-height:46px;padding:13px 17px;font-size:13px;letter-spacing:.035em;
+  border-radius:14px;flex:1 1 145px;
+}
+.btn-neon{
+  background:linear-gradient(135deg,#18354d 0%,#28315b 48%,#34204c 100%);
+  border:1px solid #6ceaffc9;
+  box-shadow:inset 0 1px #ffffff24,inset 0 0 18px #5feaff12,0 0 10px #35dfff35,0 0 24px #8b5cff16;
+  text-shadow:0 0 9px #7feaff45;
+}
+.btn-neon:hover{filter:brightness(1.22);box-shadow:inset 0 1px #ffffff40,0 0 14px #35dfff65,0 0 30px #8b5cff30}
+.modal-card{
+  border-color:#7aa9d8;box-shadow:0 25px 90px #000d,0 0 0 1px #75eaff15,0 0 38px #36d8ff20,inset 0 1px #ffffff17;
+  background:radial-gradient(ellipse at 50% 0%,#243a5a 0%,#142138 42%,#0b1323 100%);
+}
+.modal-head{
+  border-bottom:1px solid #78cfff28;
+  box-shadow:0 8px 18px #09101d30;
+}
+.modal-head h2{
+  color:#f3f8ff;text-shadow:0 0 9px #65eaff55,0 0 22px #b66aff35;
+}
+#closeAchievements,#closeStatistics{min-height:40px;border-color:#76dfff80;box-shadow:0 0 13px #3ddcff1c}
+.achievement-list{gap:11px}
+.achievement{
+  position:relative;overflow:hidden;padding:13px;border-color:#3f587a;
+  background:linear-gradient(145deg,#1b2d47,#10192b);
+  box-shadow:inset 0 1px #ffffff0a,0 5px 15px #0002;transition:transform .16s,border-color .16s,box-shadow .16s;
+}
+.achievement:hover{transform:translateY(-2px);border-color:#70dfff88;box-shadow:0 0 18px #35dfff16}
+.achievement.unlocked{
+  border-color:#ffdf78;
+  background:linear-gradient(145deg,#655020 0%,#332b20 52%,#182236 100%);
+  box-shadow:inset 0 0 22px #ffd65b20,0 0 0 1px #ffdf7840,0 0 18px #ffca4a24;
+}
+.achievement.unlocked:before{
+  content:"✦";position:absolute;right:10px;top:7px;font-size:17px;color:#fff1a3;
+  text-shadow:0 0 7px #ffdb53,0 0 16px #ffb72e;
+}
+.achievement-title{font-size:13px;text-shadow:0 0 10px #ffd96a38}
+.achievement-desc{font-size:11px;line-height:1.5}
+.achievement-status{font-size:10px}
+.statistics-grid{gap:11px}
+.stat-card{
+  position:relative;overflow:hidden;padding:15px;border-color:#3d6285;
+  background:linear-gradient(145deg,#172a43,#0e192a);
+  box-shadow:inset 0 1px #ffffff10,0 8px 20px #0003,0 0 12px #34cfff0b;
+}
+.stat-card:before{content:"";position:absolute;left:0;top:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#61eaff,#9b7bff,transparent);opacity:.75}
+.stat-card span{font-size:11px;color:#b5cbe6}
+.stat-card strong{font-size:clamp(23px,3vw,29px);color:#ffe58a;text-shadow:0 0 10px #ffcb4c45,0 0 22px #ffb52b22}
+.achievement-toast{
+  width:min(600px,calc(100% - 24px));padding:15px 20px 16px;
+  border:1px solid #fff5bf;border-radius:16px;
+  background:linear-gradient(105deg,#fff4b4 0%,#f7d66e 22%,#d99a27 50%,#ffe78b 78%,#fff6c8 100%);
+  color:#392608;box-shadow:0 0 0 2px #ffdc6766,0 0 12px #fff0a5,0 0 34px #ffc83dcc,0 0 65px #ff9e2d60,0 14px 35px #0009;
+}
+.achievement-toast:before{content:"🏆  ✦  RECOMPENSA DESBLOQUEADA  ✦";display:block;margin-bottom:5px;font-size:10px;font-weight:1000;letter-spacing:.16em;color:#69420a}
+.achievement-toast b{font-size:15px;color:#2b1c05;text-shadow:0 1px #fff8;letter-spacing:.045em}
+.achievement-toast span{font-size:12px;color:#4b340d}
+.streak-mini{
+  gap:9px;margin-top:9px;padding:9px 12px;min-height:42px;border-radius:12px;
+  background:linear-gradient(100deg,#0e3441 0%,#172744 52%,#281b48 100%);
+  border:1px solid #45e6f4c4;color:#9bfff7;font-size:12px;
+  box-shadow:inset 0 0 17px #27eaff20,0 0 0 1px #32d9ed16,0 0 16px #28d9e744;
+}
+.streak-mini span{font-size:11px;letter-spacing:.09em;font-weight:1000;color:#b4fff9;text-shadow:0 0 9px #20f7ff7a}
+.streak-mini b{font-size:16px;color:#fff;text-shadow:0 0 7px #20f7ff,0 0 15px #20f7ff,0 0 25px #5b8dff}
+.streak-mini small{font-size:10px;color:#d4ff9e;text-shadow:0 0 8px #85ff72}
+@media(max-width:600px){
+  .menu-actions .btn,#achievementsSideBtn,#statisticsSideBtn{min-height:44px;padding:11px 10px;font-size:12px}
+  .achievement-list{gap:8px}
+  .achievement{padding:10px}
+  .statistics-grid{gap:8px}
+  .stat-card{padding:11px}
+}
+
+
+  /* Reinicio total de datos: acción separada y claramente identificable */
+  .btn-reset-data{margin-top:2px;padding:12px 14px;border:1px solid rgba(255,92,115,.72);border-radius:12px;color:#ffdce2;font-weight:950;letter-spacing:.055em;background:linear-gradient(135deg,rgba(130,24,48,.72),rgba(54,17,35,.92));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 14px rgba(255,52,92,.17);text-shadow:0 0 9px rgba(255,88,112,.38);transition:transform .18s,box-shadow .18s,border-color .18s}
+  .btn-reset-data:hover{transform:translateY(-1px);border-color:#ff9baa;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 22px rgba(255,52,92,.32)}
+  .btn-reset-data:focus-visible{outline:2px solid #ffb2bf;outline-offset:3px}
+
+  .cell.half-cell{background:linear-gradient(145deg,#ff6688,#a51646)!important;border:2px solid #ffd0db;box-shadow:inset 0 0 0 2px #7d1738,0 0 12px #ff426b99;color:#fff}
+  .cell.x5-cell{background:linear-gradient(145deg,#ffe78a,#e89b18)!important;border:2px solid #fff4bd;box-shadow:inset 0 0 0 2px #a95c08,0 0 13px #ffc84bba;color:#301900}
+  .cell.half-cell .special-label,.cell.x5-cell .special-label{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(10px,1.7vw,18px);font-weight:1000;letter-spacing:-.04em;text-shadow:0 2px 4px #0008;pointer-events:none}
+
+/* Ajuste solicitado: tablero sin marco lateral y algo más compacto */
+.board-panel{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  padding:0 !important;
+}
+.board-wrap{
+  width:100% !important;
+  max-width:min(100%,620px) !important;
+}
+.board{
+  border:0 !important;
+  box-shadow:none !important;
+  padding:2px !important;
+  border-radius:7px !important;
+}
+
+/* V9: escena animada y acabado cinematográfico para la intro */
+.intro-screen{background:radial-gradient(ellipse at 50% 43%,#14253c 0%,#080e1b 48%,#02040a 100%) !important;isolation:isolate}
+.intro-scene{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.intro-mini-board{position:absolute;left:50%;top:50%;width:min(76vw,690px);aspect-ratio:1;display:grid;grid-template-columns:repeat(5,1fr);gap:9px;transform:translate(-50%,-50%) rotate(-12deg) perspective(900px) rotateX(8deg);opacity:.22;filter:drop-shadow(0 0 25px #14c8ff1c);mask-image:radial-gradient(ellipse,#000 20%,transparent 72%)}
+.intro-mini-board i{display:block;border:1px solid #4adfff4a;border-radius:10px;background:linear-gradient(145deg,#10223a88,#0b142788);box-shadow:inset 0 0 14px #3edfff0c;animation:introCell 5.8s ease-in-out infinite}
+.intro-mini-board i:nth-child(5n+1){animation-delay:-1.2s}.intro-mini-board i:nth-child(5n+2){animation-delay:-2.4s}.intro-mini-board i:nth-child(7n){animation-delay:-3.5s}
+.intro-mini-board i:nth-child(11n)::after{content:"";display:block;width:100%;height:100%;border-radius:inherit;background:#26e6ff;box-shadow:0 0 20px #26e6ff;animation:introPick 5.8s ease-in-out infinite}
+.intro-bomb{position:absolute;font-size:clamp(24px,4vw,48px);filter:drop-shadow(0 0 14px #ff923b80);opacity:0;animation:introBomb 7s ease-in-out infinite}
+.intro-bomb-a{left:13%;top:25%;animation-delay:-1.2s}.intro-bomb-b{right:14%;top:30%;animation-delay:-4.5s}.intro-bomb-c{right:21%;bottom:15%;font-size:clamp(19px,3vw,34px);animation-delay:-6s}
+.intro-explosion{position:absolute;font-size:clamp(45px,8vw,90px);font-weight:900;color:#ffb94d;text-shadow:0 0 10px #ffb94d,0 0 35px #ff632e,0 0 70px #ff382e;opacity:0;animation:introBlast 7s ease-out infinite}
+.intro-explosion-a{left:18%;top:22%;animation-delay:-2.8s}.intro-explosion-b{right:18%;top:27%;color:#69efff;text-shadow:0 0 12px #69efff,0 0 38px #269eff;animation-delay:-5.2s}
+.intro-spark{position:absolute;color:#a4f5ff;text-shadow:0 0 12px #45ddff;animation:introSpark 4s ease-in-out infinite}.intro-spark-a{left:27%;bottom:22%;font-size:25px}.intro-spark-b{right:29%;top:18%;font-size:32px;animation-delay:-2s}
+.intro-vignette{z-index:1;background:radial-gradient(ellipse at center,#02071115 0%,#02040b55 56%,#010207e8 100%) !important}
+.intro-content{z-index:2;width:min(680px,100%);padding:clamp(18px,3vh,30px) 20px;border:1px solid #6bdbff24;border-radius:28px;background:linear-gradient(145deg,#0712229c,#050914b8);box-shadow:0 25px 90px #0008,inset 0 1px #ffffff0b;backdrop-filter:blur(7px)}
+.intro-kicker{letter-spacing:.32em !important;color:#9aefff !important}
+.intro-emblem{width:94px !important;height:94px !important;margin:18px auto 21px !important;animation:introEmblemFloat 4s ease-in-out infinite;box-shadow:0 0 0 8px #f9c95f0c,0 0 30px #ffb73570,0 0 90px #ff8d2b2b,inset 0 1px #fff9 !important}
+.intro-title{letter-spacing:.04em !important;text-shadow:0 0 14px #61eaffaa,0 0 35px #4edbff55,0 5px 0 #101a31 !important}.intro-tagline{letter-spacing:.14em !important}
+.intro-rule{margin:19px auto !important;width:min(290px,75%) !important}.intro-desc{margin-bottom:20px !important}
+.intro-continue{border-radius:12px !important;min-height:48px !important;box-shadow:0 5px 0 #8f5d19,0 0 25px #ffbd3655 !important}.intro-hint{margin-top:14px !important}
+@keyframes introCell{0%,14%,100%{background:linear-gradient(145deg,#10223a88,#0b142788);border-color:#4adfff32;box-shadow:inset 0 0 14px #3edfff0c}20%,32%{background:linear-gradient(145deg,#123c4a,#0b2235);border-color:#60efff;box-shadow:inset 0 0 20px #3edfff55,0 0 20px #3edfff55}38%,55%{background:linear-gradient(145deg,#40261c,#20121b);border-color:#ffab56;box-shadow:inset 0 0 20px #ff743655,0 0 20px #ff743633}}
+@keyframes introPick{0%,15%,100%{opacity:0}22%,34%{opacity:.9}40%,55%{opacity:.08}}
+@keyframes introBomb{0%,8%,48%,100%{opacity:0;transform:translateY(12px) scale(.7) rotate(-20deg)}15%,32%{opacity:.85;transform:translateY(0) scale(1) rotate(0)}40%{opacity:0;transform:translateY(-9px) scale(1.25) rotate(22deg)}}
+@keyframes introBlast{0%,100%{opacity:0;transform:scale(.2) rotate(-25deg)}8%{opacity:0}13%{opacity:.95;transform:scale(1.2) rotate(8deg)}24%{opacity:0;transform:scale(1.9) rotate(25deg)}}
+@keyframes introSpark{0%,100%{opacity:.15;transform:translateY(0) rotate(0) scale(.8)}50%{opacity:1;transform:translateY(-18px) rotate(80deg) scale(1.25)}}
+@keyframes introEmblemFloat{0%,100%{filter:brightness(1);translate:0 0}50%{filter:brightness(1.12);translate:0 -5px}}
+@media(max-width:520px){.intro-content{padding:20px 12px;border-radius:22px}.intro-mini-board{width:110vw;gap:5px}.intro-mini-board i{border-radius:5px}.intro-emblem{width:76px !important;height:76px !important;margin:14px auto 17px !important}.intro-rule{margin:14px auto !important}.intro-desc{margin-bottom:15px !important;line-height:1.55 !important}}
+@media(prefers-reduced-motion:reduce){.intro-mini-board i,.intro-bomb,.intro-explosion,.intro-spark,.intro-emblem{animation:none!important}.intro-mini-board i:nth-child(11n)::after{display:none}}
+
+/* Explosión al descubrir una bomba: se reproduce antes del mensaje de fin */
+.bomb-impact-layer[hidden]{display:none!important}
+.bomb-impact-layer{position:fixed;inset:0;z-index:3000;overflow:hidden;pointer-events:none;background:radial-gradient(circle at var(--blast-x,50%) var(--blast-y,50%),#ff7b2722 0%,#03050ac9 70%);animation:bombScreenFlash 1.15s ease-out both}
+.bomb-impact-burst{position:absolute;left:50%;top:50%;width:min(46vw,300px);height:min(46vw,300px);min-width:170px;min-height:170px;transform:translate(-50%,-50%);display:grid;place-items:center}
+.bomb-impact-core{position:absolute;font-size:clamp(36px,7vw,68px);filter:drop-shadow(0 0 12px #ff9b35);animation:bombCore 1.12s ease-out both}
+.bomb-impact-flash{position:absolute;color:#fff7bd;font-size:clamp(80px,17vw,160px);line-height:1;text-shadow:0 0 18px #fff,0 0 42px #ffb83e,0 0 85px #ff4a24;opacity:0;animation:bombFlash 1.05s cubic-bezier(.1,.7,.2,1) both}
+.bomb-impact-boom{position:absolute;font-size:clamp(56px,12vw,110px);filter:drop-shadow(0 0 18px #ff6b2e);opacity:0;animation:bombBoom 1.12s .08s cubic-bezier(.1,.7,.2,1) both}
+.bomb-impact-ring{position:absolute;width:18%;height:18%;border:5px solid #ffcb63;border-radius:50%;box-shadow:0 0 24px #ff762c,inset 0 0 18px #ff762c;opacity:0;animation:bombRing .9s .08s ease-out both}
+.bomb-impact-ring.ring-two{border-color:#8bf3ff;box-shadow:0 0 24px #38dfff;animation-delay:.2s}
+.bomb-impact-sparks{position:absolute;color:#fff1ad;font-size:clamp(16px,3vw,27px);letter-spacing:.1em;text-shadow:0 0 12px #ff782d;opacity:0;animation:bombSparks .9s .1s ease-out both}
+@keyframes bombScreenFlash{0%{background-color:#fff4b9}12%{background-color:#ff6a24b8}30%{background-color:#03050aab}100%{background-color:#03050a00}}
+@keyframes bombCore{0%{opacity:1;transform:scale(.6) rotate(-20deg)}24%{opacity:1;transform:scale(1.15) rotate(8deg)}38%{opacity:0;transform:scale(1.7) rotate(25deg)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes bombFlash{0%{opacity:0;transform:scale(.1) rotate(-20deg)}15%{opacity:1;transform:scale(.8) rotate(8deg)}40%{opacity:.95;transform:scale(1.35) rotate(24deg)}100%{opacity:0;transform:scale(1.8) rotate(45deg)}}
+@keyframes bombBoom{0%,10%{opacity:0;transform:scale(.1) rotate(-20deg)}25%{opacity:1;transform:scale(1.05) rotate(8deg)}48%{opacity:1;transform:scale(1.2) rotate(-5deg)}100%{opacity:0;transform:scale(1.65) rotate(18deg)}}
+@keyframes bombRing{0%{opacity:0;transform:scale(.1)}18%{opacity:1}100%{opacity:0;transform:scale(5.2)}}
+@keyframes bombSparks{0%{opacity:0;transform:scale(.2) rotate(0)}20%{opacity:1}100%{opacity:0;transform:scale(1.8) rotate(28deg)}}
+@media(prefers-reduced-motion:reduce){.bomb-impact-layer,.bomb-impact-core,.bomb-impact-flash,.bomb-impact-boom,.bomb-impact-ring,.bomb-impact-sparks{animation-duration:.2s!important}}
+
+/* V12: responsive refinado + sensación 3D táctil */
+html{width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{width:100%;min-width:0;overflow-x:hidden}
+.app,.main,.board-panel,.side-panel,.board-wrap{min-width:0}
+.board-wrap{touch-action:manipulation}
+.board{perspective:900px;transform-style:preserve-3d}
+.cell{transform:translateZ(0);transform-origin:center;-webkit-tap-highlight-color:transparent;touch-action:manipulation;box-shadow:inset 0 1px 0 #ffffff55,inset 0 -4px 0 #0000002c,0 3px 0 #050a13,0 5px 8px #0004;transition:transform .14s cubic-bezier(.2,.8,.2,1),filter .14s,box-shadow .14s,border-color .14s}
+.cell:hover:not(:disabled){transform:translateY(-2px) translateZ(3px);box-shadow:inset 0 1px 0 #ffffff66,inset 0 -4px 0 #0002,0 4px 0 #050a13,0 8px 12px #0005}
+/* La casilla no se desplaza mientras se pulsa: el efecto 3D empieza después del click. */
+.cell:active:not(:disabled){animation:none!important;transform:translateZ(0);filter:brightness(1.12) saturate(1.08)}
+.cell:disabled{transform:translateZ(0)}
+.cell.boom{box-shadow:inset 0 0 22px #ff5d2eaa,0 0 0 2px #fff,0 0 28px #ff4b2e99;transform:translateZ(5px)}
+@media(hover:none) and (pointer:coarse){
+  .btn{min-height:42px}
+  .cell:hover:not(:disabled){transform:none;filter:none}
+  /* En pantallas táctiles, no mover la casilla mientras el dedo sigue apoyado:
+     evita que el navegador cancele el click y parezca que exige una pulsación larga. */
+  .cell:active:not(:disabled){animation:none!important;transform:translateZ(0);filter:brightness(1.12) saturate(1.08)}
+}
+@media(max-width:900px){
+ body{padding:10px}.app{width:100%;gap:10px}.main{grid-template-columns:minmax(0,1fr);gap:10px}
+ .board-panel{padding:clamp(8px,2vw,14px)}.board-wrap{width:min(100%,min(78vh,680px));max-width:100%;margin-inline:auto}
+ .side-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:10px}.side-panel .full{grid-column:1/-1}
+ .overlay{padding:14px}.overlay-card{width:min(440px,94vw);max-width:94vw;padding:clamp(18px,4vw,28px)}
+}
+@media(max-width:600px){
+ body{padding:6px}.app{gap:8px}.top{gap:8px;align-items:center}.brand{gap:8px;min-width:0}.brand>div:last-child{min-width:0}
+ .subtitle{letter-spacing:.08em;line-height:1.25}.record{min-width:0;max-width:46%;padding:7px 9px}.record-value{font-size:clamp(20px,6vw,27px)}
+ .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.stat{padding:8px 9px}.main{gap:8px}
+ .board-panel{padding:7px;border-radius:13px}.board-head{gap:5px;margin-bottom:8px}.board-title{font-size:11px}.board-caption{font-size:10px;line-height:1.3}
+ .board-wrap{width:100%;max-width:100%;aspect-ratio:1}.board{gap:clamp(2px,.65vw,4px);padding:4px;border-radius:10px}
+ .cell{border-radius:clamp(2px,1vw,5px);box-shadow:inset 0 1px 0 #ffffff55,inset 0 -2px 0 #0000002c,0 2px 0 #050a13,0 3px 5px #0004}
+ .side-panel{grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:7px}.side-panel .btn,.menu-actions .btn{min-width:0}
+ .message{font-size:12px;line-height:1.4}.overlay{padding:12px}.overlay-card{width:100%;max-width:440px;border-radius:22px;padding:20px 15px}
+ .overlay-icon{width:68px;height:68px;border-radius:20px;font-size:43px}.overlay h2{font-size:clamp(23px,7vw,32px)}.overlay p{font-size:13px;line-height:1.5}
+ .overlay .btn{min-width:0;width:100%}.menu-actions{gap:7px}.menu-actions .btn{flex:1 1 42%;font-size:11px}
+}
+@media(max-width:380px){
+ .top{align-items:flex-start}.brand{align-items:flex-start}.logo{width:34px;height:34px;font-size:20px}
+ .record{max-width:44%;padding:6px 7px}.record-label{font-size:9px}.board-head .live{font-size:8px;padding:4px 6px}
+ .side-panel{grid-template-columns:minmax(0,1fr)}.side-panel .full{grid-column:auto}.overlay-card{padding:18px 12px}
+}
+/* Derrota por bomba: tarjeta inclinada, relieve, brillos y entrada 3D */
+.overlay{perspective:1200px}
+.overlay.bomb-defeat .overlay-card{border:1px solid #ff946caa;background:linear-gradient(145deg,#3a1d2b 0%,#17172a 48%,#080d19 100%);box-shadow:0 0 0 1px #ff57221c,inset 0 2px 0 #ffffff18,inset 0 -12px 25px #0006,0 22px 0 -8px #080b14,0 32px 70px #000b,0 0 45px #ff492e3b;transform-style:preserve-3d;animation:bombCardEnter .72s cubic-bezier(.16,.85,.24,1.18) both}
+.overlay.bomb-defeat .overlay-card:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(125deg,#fff4 0%,transparent 25%,transparent 60%,#ff5b381c 100%);transform:translateZ(2px)}
+.overlay.bomb-defeat .overlay-icon{background:radial-gradient(circle at 35% 25%,#fff2b0,#ff793b 42%,#8e202c 100%);color:#fff8e9;border:1px solid #ffd4a1;box-shadow:0 0 0 6px #ff5a2b12,inset 0 4px 0 #ffffff65,inset 0 -8px 15px #681b2b88,0 10px 0 #551b25,0 17px 26px #0008,0 0 36px #ff542e70;transform:translateZ(30px) rotateX(-8deg) rotateY(8deg);animation:bombIcon3D 1.8s ease-in-out infinite}
+.overlay.bomb-defeat .overlay h2{color:#fff0e7;text-shadow:0 2px 0 #802d2c,0 4px 0 #481b2b,0 0 16px #ff643c99,0 0 35px #ff3d3370;transform:translateZ(18px) rotateX(-2deg)}
+.overlay.bomb-defeat .overlay p{color:#e2d5dc;text-shadow:0 1px 0 #0008;transform:translateZ(8px)}
+.overlay.bomb-defeat .btn{box-shadow:0 5px 0 #8f3d22,0 9px 20px #0008,0 0 22px #ff9c3650;transform:translateZ(12px)}
+@keyframes bombCardEnter{0%{opacity:0;transform:rotateX(24deg) rotateY(-12deg) translateY(45px) scale(.82);filter:blur(5px)}65%{opacity:1;transform:rotateX(-5deg) rotateY(3deg) translateY(-4px) scale(1.025);filter:blur(0)}100%{opacity:1;transform:rotateX(0) rotateY(0) translateY(0) scale(1);filter:blur(0)}}
+@keyframes bombIcon3D{0%,100%{transform:translateZ(30px) rotateX(-8deg) rotateY(8deg) translateY(0)}50%{transform:translateZ(34px) rotateX(5deg) rotateY(-6deg) translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.cell,.overlay.bomb-defeat .overlay-card,.overlay.bomb-defeat .overlay-icon{animation:none!important;transition:none!important}}
+
+/* V14: interfaz simplificada, tipografía más clara y adaptación a móvil/tablet */
+:root{font-synthesis:none;text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.app{width:min(1240px,100%);gap:12px}.top{gap:12px}
+.brand h1,.brand .title{letter-spacing:.045em;text-shadow:0 2px 0 #080e1b,0 0 12px #36dcff44,0 0 28px #36dcff25}
+.subtitle{letter-spacing:.12em}.board-head{justify-content:flex-end;margin-bottom:7px}
+.live{padding:5px 9px;border:1px solid #3de9b577;border-radius:999px;background:linear-gradient(180deg,#123c35,#0b211f);box-shadow:inset 0 1px #ffffff20,0 3px 0 #050d16,0 0 14px #43e69a20}
+.stats .stat{background:linear-gradient(155deg,#1b2b46 0%,#111a2b 65%,#0c1423 100%);border-color:#354a6b;box-shadow:inset 0 1px 0 #ffffff12,inset 0 -3px 0 #050a13,0 4px 0 #060b13,0 8px 18px #0004}
+.stat .label{letter-spacing:.095em}.stat .value{text-shadow:0 2px 0 #060b14,0 0 12px #58dfff25;font-variant-numeric:tabular-nums}.stat .value.gold{text-shadow:0 1px 0 #53330b,0 0 10px #ffca4b55,0 0 22px #ffad2530}
+.record{min-width:174px;padding:10px 15px;gap:12px;border-radius:15px;color:#fff4cf;border:1px solid #ffe29a;background:linear-gradient(155deg,#49371b 0%,#28233a 43%,#111b2d 100%);box-shadow:inset 0 1px 0 #ffffff55,inset 0 -4px 0 #090e1a,0 4px 0 #080d17,0 9px 0 #050912,0 14px 25px #0008,0 0 20px #ffc34b38;transform:translateY(-1px)}
+.record:before{inset:-3px;border-color:#ffdf75aa;box-shadow:0 0 7px #fff16b,0 0 18px #ffbf36,0 0 32px #ff7b3544}.record:after{right:-5px;top:-11px;font-size:14px}
+.record-label{font-size:11px;letter-spacing:.17em;color:#ffe7a0;text-shadow:0 2px 0 #211607,0 0 12px #ffc84b75}.record-value{font-size:30px;color:#fff;text-shadow:0 2px 0 #674313,0 0 8px #fff3b0,0 0 18px #ffc94d99,0 0 32px #ff9c3655;font-variant-numeric:tabular-nums}
+.streak-mini{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;padding:7px 11px;min-height:36px;border-radius:11px;background:linear-gradient(145deg,#103945 0%,#142541 55%,#251b46 100%);border:1px solid #45e6f4b5;color:#a6fff7;box-shadow:inset 0 1px 0 #ffffff20,inset 0 -3px 0 #07111e,0 3px 0 #060d18,0 7px 14px #0005,0 0 15px #28d9e733}
+.streak-mini span{font-size:11px;letter-spacing:.1em;font-weight:1000;color:#b4fff9;text-shadow:0 1px 0 #09202b,0 0 10px #20f7ff88}.streak-mini b{font-size:17px;min-width:1.4em;text-align:right;color:#fff;text-shadow:0 2px 0 #0b1b2a,0 0 8px #20f7ff,0 0 18px #20f7ff,0 0 28px #5b8dff}.streak-mini small{display:none!important}
+.board-title,.board-caption{display:none!important}button,.btn{font-family:inherit;letter-spacing:.015em}.btn{box-shadow:inset 0 1px 0 #ffffff1c,0 3px 0 #080e19,0 6px 12px #0004}.cell{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(max-width:900px){body{padding:9px}.app{gap:10px}.top{gap:10px}.main{grid-template-columns:minmax(0,1fr);gap:10px}.board-panel{padding:clamp(7px,1.5vw,12px)}.board-wrap{width:min(100%,680px);max-width:100%;margin-inline:auto}.side-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}.side-panel .full{grid-column:1/-1}.record{min-width:160px}}
+@media(max-width:600px){body{padding:6px}.app{gap:8px}.top{align-items:center;gap:8px}.brand{gap:7px;min-width:0;flex:1}.brand h1,.brand .title{font-size:clamp(19px,5vw,27px);line-height:1.02}.subtitle{font-size:8px;letter-spacing:.08em;margin-top:3px}.logo{width:38px;height:38px;flex:0 0 38px}.record{min-width:118px;max-width:42%;padding:8px 10px;gap:8px;border-radius:12px}.record-label{font-size:9px;letter-spacing:.13em}.record-value{font-size:25px}.record:after{font-size:11px;right:-4px;top:-9px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.stat{padding:7px 9px;border-radius:10px}.stat .label{font-size:9px}.stat .value{font-size:clamp(17px,4.8vw,22px)}.main{gap:8px}.board-panel{padding:5px;border-radius:13px}.board-head{margin-bottom:5px}.board-wrap{width:100%;max-width:100%}.board{gap:clamp(2px,.6vw,4px);padding:3px}.side-panel{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:7px}.side-panel .full{grid-column:1/-1}.side-panel .btn,.menu-actions .btn{min-width:0;min-height:42px;padding:9px 7px;font-size:11px}.streak-mini{margin-top:6px;min-height:34px;padding:6px 9px}.streak-mini span{font-size:10px}.streak-mini b{font-size:15px}.message{padding:10px}.message-title{font-size:13px}.message-text,.tip{font-size:11px;line-height:1.4}}
+@media(max-width:360px){.record{min-width:104px;padding:7px 8px}.record-value{font-size:22px}.brand h1,.brand .title{font-size:18px}.logo{width:33px;height:33px;flex-basis:33px}.side-panel{grid-template-columns:minmax(0,1fr)}.side-panel .full{grid-column:auto}.board{gap:2px;padding:2px}}
+@media(hover:none){.btn:hover:before{transform:translateX(-130%)}.cell:active:not(:disabled){transform:translateZ(0)!important;filter:brightness(1.08)}}
+
+/* Botón principal: más profundidad 3D sin afectar al tablero ni a la respuesta del click. */
+#startBtn{
+  position:relative;isolation:isolate;transform:translateY(-2px) translateZ(0);
+  border:1px solid #fff0a6;
+  background:linear-gradient(180deg,#fff0a7 0%,#ffd65c 28%,#f0b52f 72%,#d99220 100%);
+  box-shadow:inset 0 2px 0 #ffffffc9,inset 0 -3px 0 #9b6419aa,0 3px 0 #a56b1a,0 7px 0 #69400f,0 11px 19px #0009,0 0 20px #ffc53f55;
+  text-shadow:0 1px 0 #fff5bd,0 2px 1px #a66b19aa;
+  transition:transform .12s ease,box-shadow .12s ease,filter .12s ease;
+}
+#startBtn:before{z-index:-1;background:linear-gradient(115deg,transparent 12%,#ffffff68 45%,transparent 68%);transform:translateX(-130%)}
+#startBtn:hover{filter:brightness(1.08);transform:translateY(-3px);box-shadow:inset 0 2px 0 #ffffffdd,inset 0 -3px 0 #9b6419aa,0 4px 0 #a56b1a,0 8px 0 #69400f,0 14px 24px #000a,0 0 28px #ffc53f88}
+#startBtn:hover:before{transform:translateX(130%)}
+#startBtn:active{transform:translateY(5px) scale(.995);filter:brightness(.98);box-shadow:inset 0 2px 0 #ffffff99,inset 0 -1px 0 #9b6419aa,0 1px 0 #69400f,0 3px 8px #0008,0 0 14px #ffc53f45}
+#startBtn:focus-visible{outline:2px solid #fff2a8;outline-offset:4px}
+
+
+/* Ajustes ligeros, accesibles y sin animaciones pesadas en las casillas */
+.settings-actions .btn{font-size:clamp(10px,1.2vw,12px);min-width:0;padding:10px 7px;white-space:normal}
+#fullscreenBtn{min-height:42px;font-weight:850;letter-spacing:.04em}
+.cell{transition:filter .08s ease,box-shadow .08s ease !important;will-change:auto}
+.cell:active{transform:none !important;filter:brightness(1.08)}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
+
+
+/* CHROMA MINE v18 — acabado más redondeado, profundo y limpio; sin tienda ni misiones. */
+:root{
+  --radius-card:24px;
+  --radius-control:17px;
+}
+body{padding:clamp(8px,1.6vw,18px)}
+.app{gap:15px}
+.logo{
+  border-radius:19px;
+  box-shadow:inset 0 2px 0 #fff9,inset 0 -4px 0 #8b4c1c66,0 5px 0 #71421b,0 9px 20px #0007,0 0 20px #ffbd4d22;
+}
+.record{
+  border-radius:19px;
+  box-shadow:inset 0 2px 0 #fff9,inset 0 -4px 0 #a96818aa,0 5px 0 #8c5717,0 10px 22px #0006,0 0 22px #ffce4b44;
+}
+.stats{gap:10px}
+.stat{
+  border-radius:19px;
+  background:linear-gradient(155deg,#263651 0%,#19263d 42%,#10192b 100%);
+  border:1px solid #425575;
+  box-shadow:inset 0 1px 0 #ffffff15,inset 0 -4px 0 #050a13a8,0 4px 0 #090f1d,0 9px 18px #0003;
+  padding:12px 14px;
+}
+.stat .label{text-shadow:0 1px 6px #0008}
+.stat .value{text-shadow:0 2px 8px #0006}
+.main{gap:16px}
+.board-panel,.side-panel{
+  border-radius:26px;
+  background:linear-gradient(150deg,#202f49f5 0%,#141f33f5 55%,#0c1424f5 100%);
+  border:1px solid #40516f;
+  box-shadow:inset 0 1px 0 #ffffff17,inset 0 -5px 0 #050a1370,0 6px 0 #080e19,0 16px 36px #0005;
+}
+/* El tablero conserva el tamaño y la respuesta inmediata de las casillas. */
+.board-panel{border-radius:25px!important;background:linear-gradient(150deg,#1b2941,#111b2e)!important;border:1px solid #364966!important;box-shadow:inset 0 1px 0 #ffffff12,0 6px 0 #080e19,0 13px 28px #0004!important;padding:clamp(8px,1.6vw,17px)!important}
+.board-wrap{max-width:min(100%,620px)!important}
+.board{
+  border:1px solid #344560!important;
+  border-radius:18px!important;
+  padding:7px!important;
+  gap:clamp(2px,.48vw,5px)!important;
+  background:linear-gradient(145deg,#070d19,#111b2d)!important;
+  box-shadow:inset 0 3px 9px #0009,inset 0 0 0 1px #ffffff09,0 5px 0 #050913,0 12px 24px #0006!important;
+}
+.cell{
+  border-radius:clamp(5px,.75vw,10px)!important;
+  box-shadow:inset 0 2px 0 #ffffff48,inset 0 -4px 0 #0000002d,0 3px 0 #060b15a8,0 4px 6px #0004!important;
+  border-color:#ffffff40;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  transition:filter .08s ease,border-color .08s ease,box-shadow .08s ease!important;
+  will-change:auto!important;
+}
+.cell:active:not(:disabled){transform:none!important;filter:brightness(1.08)!important}
+.cell:hover:not(:disabled){transform:none!important;filter:brightness(1.09)!important}
+.cell.safe,.cell.mystery-cell,.cell.immune-cell{box-shadow:inset 0 2px 0 #ffffff4a,inset 0 -3px 0 #0003,0 3px 0 #060b15aa,0 0 8px #ffffff12!important}
+.side-panel{padding:clamp(13px,1.7vw,19px);gap:14px}
+.message,.tip,.rule,.modal-card,.achievement{
+  border-radius:18px;
+  box-shadow:inset 0 1px 0 #ffffff0e,0 4px 0 #080e19aa,0 8px 16px #0002;
+}
+.message{padding:15px;background:linear-gradient(145deg,#111c30,#0b1323);border-color:#344766}
+.message.good{background:linear-gradient(145deg,#17372d,#10241f)}
+.message.bad{background:linear-gradient(145deg,#401d2a,#25121d)}
+.message.hint{background:linear-gradient(145deg,#3a301b,#211a12)}
+.progress{height:11px;border-radius:99px;box-shadow:inset 0 2px 5px #000b}
+.progress-fill{box-shadow:inset 0 1px 0 #ffffff77,0 0 10px #8bffbd55}
+.btn{
+  border-radius:17px;
+  position:relative;
+  box-shadow:inset 0 1px 0 #ffffff18,0 4px 0 #080e19a8,0 7px 13px #0003;
+  transition:filter .1s ease,box-shadow .1s ease;
+}
+.btn:active{transform:translateY(2px)!important;box-shadow:inset 0 2px 5px #0003,0 1px 0 #080e19!important}
+.btn-gold{
+  background:linear-gradient(180deg,#fff0a7 0%,#ffd963 27%,#efb333 72%,#c9821d 100%);
+  border:1px solid #fff0ac;
+  box-shadow:inset 0 2px 0 #ffffffcf,inset 0 -3px 0 #a76b19aa,0 4px 0 #a56b1a,0 7px 0 #69400f,0 12px 22px #0007,0 0 18px #ffc53f35;
+}
+.btn-ghost,.btn-neon,.btn-reset-data{border-radius:16px;box-shadow:inset 0 1px 0 #ffffff17,inset 0 -3px 0 #060b1580,0 4px 0 #070d18,0 8px 14px #0003}
+#startBtn{
+  border-radius:21px;
+  min-height:54px;
+  letter-spacing:.035em;
+  box-shadow:inset 0 2px 0 #ffffffd9,inset 0 -4px 0 #9b6419aa,0 4px 0 #a56b1a,0 8px 0 #69400f,0 13px 23px #000a,0 0 24px #ffc53f55;
+}
+#startBtn:hover{transform:translateY(-2px);box-shadow:inset 0 2px 0 #ffffffdf,inset 0 -4px 0 #9b6419aa,0 5px 0 #a56b1a,0 9px 0 #69400f,0 15px 27px #000b,0 0 30px #ffc53f88}
+#startBtn:active{transform:translateY(5px)!important;box-shadow:inset 0 2px 0 #ffffff99,0 1px 0 #69400f,0 3px 8px #0008!important}
+.modal-card{border-radius:25px;background:linear-gradient(150deg,#1b2942,#101827);border:1px solid #526482;box-shadow:inset 0 1px 0 #ffffff18,0 8px 0 #070c15,0 22px 65px #000b}
+.achievement{border-radius:17px;background:linear-gradient(145deg,#202f49,#101827);border-color:#40516e;box-shadow:inset 0 1px 0 #ffffff12,0 3px 0 #080e19}
+.achievement.unlocked{box-shadow:inset 0 2px 0 #fff2,inset 0 0 18px #ffcb4c16,0 3px 0 #5f4314,0 0 14px #ffcb4c18}
+.achievement-toast{border-radius:19px;box-shadow:inset 0 2px 0 #fff9,0 6px 0 #8e5b13,0 15px 35px #0009,0 0 30px #ffc83d99}
+.streak-mini{border-radius:13px;box-shadow:inset 0 2px 0 #ffffff12,inset 0 -3px 0 #050a13,0 4px 0 #070e1b,0 8px 14px #0003}
+@media(max-width:600px){
+  body{padding:8px}
+  .app{gap:11px}
+  .stats{gap:7px}
+  .stat{border-radius:15px;padding:9px 10px}
+  .board-panel{border-radius:19px!important;padding:8px!important}
+  .board{padding:5px!important;border-radius:14px!important;gap:3px!important}
+  .cell{border-radius:5px!important}
+  .side-panel{border-radius:20px;padding:12px;gap:11px}
+  .btn{border-radius:14px}
+  #startBtn{border-radius:18px;min-height:51px}
+}
+
+</style>
+</head>
+<body>
+<div class="intro-screen" id="introScreen" role="dialog" aria-label="Introducción de CHROMA MINE">
+  <div class="intro-scene" aria-hidden="true">
+    <div class="intro-mini-board">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+    <span class="intro-bomb intro-bomb-a">💣</span><span class="intro-bomb intro-bomb-b">💣</span><span class="intro-bomb intro-bomb-c">💣</span>
+    <span class="intro-explosion intro-explosion-a">✹</span><span class="intro-explosion intro-explosion-b">✹</span>
+    <span class="intro-spark intro-spark-a">✦</span><span class="intro-spark intro-spark-b">✧</span>
+  </div>
+  <div class="intro-vignette"></div>
+  <div class="intro-content">
+    <div class="intro-kicker">UN JUEGO DE RIESGO Y ESTRATEGIA</div>
+    <div class="intro-emblem" aria-hidden="true"><span>✦</span></div>
+    <h1 class="intro-title">CHROMA <em>MINE</em></h1>
+    <div class="intro-tagline">PIENSA RÁPIDO · ELIGE BIEN · SOBREVIVE</div>
+    <div class="intro-rule"></div>
+    <p class="intro-desc">Cien casillas. Una bomba. Veinticinco niveles.<br>La suerte ayuda, pero la estrategia decide.</p>
+    <button class="btn btn-gold intro-continue" id="introContinue">ENTRAR AL JUEGO <span aria-hidden="true">↗</span></button>
+    <div class="intro-hint"><kbd>ESPACIO</kbd> O <kbd>ENTER</kbd> PARA CONTINUAR</div>
+  </div>
+  <div class="intro-footer">CHROMA MINE // OFFLINE GAME EXPERIENCE</div>
+</div>
+<div class="bomb-impact-layer" id="bombImpactLayer" aria-hidden="true" hidden>
+  <div class="bomb-impact-burst" id="bombImpactBurst">
+    <span class="bomb-impact-core">💣</span>
+    <span class="bomb-impact-flash">✹</span>
+    <span class="bomb-impact-boom">💥</span>
+    <span class="bomb-impact-ring"></span>
+    <span class="bomb-impact-ring ring-two"></span>
+    <span class="bomb-impact-sparks">✦　✧　✹　✦</span>
+  </div>
+</div>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">✦</div>
+      <div><h1>CHROMA MINE</h1><div class="subtitle">PENSAR · ARRIESGAR · AVANZAR</div></div>
+    </div>
+    <div class="record" aria-label="Récord de nivel">
+      <div class="record-label">RÉCORD</div>
+      <div class="record-value" id="record">1</div>
+    </div>
+  </header>
+  <section class="stats">
+    <div class="stat"><div class="label">NIVEL</div><div class="value" id="levelStat">01 / 25</div></div>
+    <div class="stat"><div class="label">PUNTOS</div><div class="value gold" id="scoreStat">0</div></div>
+    <div class="stat"><div class="label">OBJETIVO</div><div class="value" id="targetStat">3</div></div>
+    <div class="stat"><div class="label">CASILLAS SEGURAS</div><div class="value" id="safeStat">0 / 99</div></div>
+  </section>
+  <main class="main">
+    <section class="board-panel">
+      <div class="board-head"><div class="live">EN PARTIDA</div></div>
+      <div class="board-wrap">
+        <div class="board" id="board" role="grid" aria-label="Tablero de 10 por 10"></div>
+        <div id="burst"></div>
+        <div class="overlay" id="overlay">
+          <div class="overlay-card">
+            <div class="overlay-icon">💎</div>
+            <h2>¿TE LA JUEGAS?</h2>
+            <p>100 casillas de colores. Evita las bombas, encuentra INMUNE para protegerte durante las tres próximas casillas y supera 25 niveles.</p>
+            <button class="btn btn-gold" id="startBtn">EMPEZAR PARTIDA</button>
+            <div class="menu-actions"><button class="btn btn-neon" id="achievementsBtn">🏆 LOGROS</button><button class="btn btn-neon" id="statisticsBtn">📊 ESTADÍSTICAS</button></div>
+            <p style="font-size:10px;margin-top:13px;margin-bottom:0">PROGRESO GUARDADO EN ESTE DISPOSITIVO</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <aside class="side-panel">
+      <div class="full">
+        <div class="section-label">PROGRESO DEL NIVEL</div>
+        <div class="level-row" style="margin-top:8px"><div class="level-num" id="levelBig">01</div><div class="level-target" id="targetLabel">Objetivo: 3 puntos</div></div>
+        <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="streak-mini" aria-live="polite"><span>🔥 RACHA +1</span><b id="streakStat">0</b></div>
+      </div>
+      <div class="message full" id="message">
+        <div class="message-title" id="messageTitle">Tu turno</div>
+        <div class="message-text" id="messageText">Pulsa «Empezar partida» y elige una casilla.</div>
+      </div>
+      <div class="full tip">Las casillas elegidas quedan marcadas. Cada diez casillas seguras aparece una pista: una casilla parpadea si hay una bomba a cuatro posiciones en línea recta o diagonal.</div>
+      <button class="btn btn-gold full" id="saveBtn">▣ Guardar partida</button>
+      <div class="menu-actions full" style="margin-top:0"><button class="btn btn-neon" id="achievementsSideBtn">🏆 Logros</button><button class="btn btn-neon" id="statisticsSideBtn">📊 Estadísticas</button></div>
+      <div class="menu-actions full settings-actions" style="margin-top:0"><button class="btn btn-neon" id="soundToggleBtn" aria-pressed="true">🔊 EFECTOS: ON</button><button class="btn btn-neon" id="musicToggleBtn" aria-pressed="false">🎵 MÚSICA: OFF</button></div>
+      <button class="btn btn-ghost full" id="fullscreenBtn">⛶ PANTALLA COMPLETA</button>
+      <button class="btn btn-ghost full" id="restartBtn">↻ Reiniciar partida</button>
+      <button class="btn btn-reset-data full" id="resetAllDataBtn" title="Borra el progreso guardado, las estadísticas, los logros y el récord">⟲ BORRAR TODOS LOS DATOS</button>
+    </aside>
+  </main>
+  
+</div>
+
+<div class="modal" id="achievementsModal" hidden>
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="achievementsTitle">
+    <div class="modal-head"><h2 id="achievementsTitle">🏆 LOGROS <span id="achievementCount" style="color:#f6d56d;font-size:13px"></span></h2><button class="btn btn-ghost" id="closeAchievements">Cerrar ✕</button></div>
+    <p class="tip">Desbloquea los 50 logros jugando. Cuando consigas uno, aparecerá una barra dorada con su nombre y descripción.</p>
+    <div class="achievement-list" id="achievementList"></div>
+  </section>
+</div>
+<div class="modal" id="statisticsModal" hidden>
+  <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="statisticsTitle">
+    <div class="modal-head"><h2 id="statisticsTitle">📊 ESTADÍSTICAS</h2><button class="btn btn-ghost" id="closeStatistics">Cerrar ✕</button></div>
+    <div class="statistics-grid" id="statisticsGrid"></div>
+  </section>
+</div>
+<div class="achievement-toast" id="achievementToast" role="status" aria-live="polite"><b id="toastTitle">🏆 LOGRO DESBLOQUEADO</b><span id="toastText"></span></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const boardEl=$('board'), overlay=$('overlay'), startBtn=$('startBtn'), restartBtn=$('restartBtn'), saveBtn=$('saveBtn');
+  const achievementsBtn=$('achievementsBtn'),statisticsBtn=$('statisticsBtn'),achievementsModal=$('achievementsModal'),statisticsModal=$('statisticsModal');
+  const COLORS=[
+    {name:'Verde',hex:'#27c875'}, {name:'Rojo',hex:'#f0445f'}, {name:'Azul',hex:'#3978f6'},
+    {name:'Amarillo',hex:'#f5ce35'}, {name:'Naranja',hex:'#f28b2f'}, {name:'Verde claro',hex:'#9be564'},
+    {name:'Azul claro',hex:'#48d5e9'}, {name:'Morado',hex:'#9860ed'}, {name:'Blanco',hex:'#f4f6fb'},
+    {name:'Negro',hex:'#252b3b'}, {name:'Rosa',hex:'#f36fb3'}
+  ];
+  const TARGETS=[3,6,10,17,28,35,40,46,53,61,69,75,78,81,85,87,88,90,94,97,99,103,104,110,115];
+  const DIRS=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+  let cells=[], level=1, score=0, safeCount=0, bombIndex=-1, bombIndices=new Set(), running=false, ended=false, record=1;
+  let x2Count=7,x3Count=3, safePicksSinceClue=0, immuneIndex=-1, immunityTurns=0, x1Streak=0,x2Streak=0,x3Streak=0;
+  const STATS_KEY='chroma_mine_lifetime_stats_v1', ACH_KEY='chroma_mine_achievements_v1';
+  const freshStats=()=>({gamesStarted:0,safePicks:0,mysteryPicks:0,bombHits:0,levelsCleared:0,pointsEarned:0,bestX1:0,bestX2:0,bestX3:0,totalX1:0,totalX2:0,totalX3:0,immuneFound:0,immunitySaved:0,penalty1Hits:0,penalty2Hits:0,minusTiles:0,mysteryPlus8:0,mysteryPlus20:0,mysteryMinus20:0,mysteryDouble:0,mysteryLoseAll:0,saves:0,highestScore:0,highestLevel:1,allColors:0});
+  let lifetimeStats=freshStats(),unlockedAchievements=new Set(),toastQueue=[],toastBusy=false;
+  try{const raw=JSON.parse(localStorage.getItem(STATS_KEY)||'null');if(raw)lifetimeStats={...freshStats(),...raw};unlockedAchievements=new Set(JSON.parse(localStorage.getItem(ACH_KEY)||'[]'));}catch(e){}
+  try { record=Math.max(1,Number(localStorage.getItem('chroma_mine_record')||1)); } catch(e){}
+  $('record').textContent=record;
+
+
+  function rand(n){return Math.floor(Math.random()*n);}
+  function multipliersForLevel(l){
+    if(l<=4)return [8,3];
+    if(l<=7)return [13,5];
+    if(l<=12)return [16,7];
+    if(l<=16)return [20,11];
+    if(l<=22)return [25,14];
+    return [29,18];
+  }
+  function coord(i){return String.fromCharCode(65+Math.floor(i/10))+'-'+(i%10+1);}
+  function setMessage(title,text,kind=''){
+    $('messageTitle').textContent=title;$('messageText').textContent=text;
+    $('message').className='message full'+(kind?' '+kind:'');
+  }
+  function makeBoard(){
+    boardEl.innerHTML=''; cells=[];
+    const [n2,n3]=multipliersForLevel(level);x2Count=n2;x3Count=n3;
+
+    const colorBag=[];
+    for(let i=0;i<COLORS.length;i++)colorBag.push(i);
+    while(colorBag.length<100)colorBag.push(rand(COLORS.length));
+    for(let i=colorBag.length-1;i>0;i--){const j=rand(i+1);[colorBag[i],colorBag[j]]=[colorBag[j],colorBag[i]];}
+
+    const bombCount=1;
+    bombIndices=new Set();
+    while(bombIndices.size<bombCount)bombIndices.add(rand(100));
+    bombIndex=[...bombIndices][0];
+
+    const immuneCandidates=Array.from({length:100},(_,i)=>i).filter(i=>!bombIndices.has(i));
+    immuneIndex=immuneCandidates[rand(immuneCandidates.length)];
+    immunityTurns=0;
+
+    const mysteryCandidates=Array.from({length:100},(_,i)=>i).filter(i=>!bombIndices.has(i)&&i!==immuneIndex);
+    for(let i=mysteryCandidates.length-1;i>0;i--){const j=rand(i+1);[mysteryCandidates[i],mysteryCandidates[j]]=[mysteryCandidates[j],mysteryCandidates[i]];}
+    const mysteryIndices=new Set(mysteryCandidates.slice(0,3));
+
+    for(let i=0;i<100;i++){
+      const cell=document.createElement('button');
+      cell.type='button';cell.className='cell';cell.style.background=COLORS[colorBag[i]].hex;
+      cell.setAttribute('role','gridcell');
+      cell.setAttribute('aria-label','Casilla '+coord(i)+', sin revelar');
+      cell.dataset.index=i;
+      cell.dataset.mult='1';
+       cell.dataset.special='';
+      cell.dataset.color=String(colorBag[i]);
+      cell.dataset.revealed='false';
+      cell.dataset.immune=i===immuneIndex?'true':'false';
+      cell.dataset.mystery=mysteryIndices.has(i)?'true':'false';
+      if(cell.dataset.mystery==='true'){
+        cell.classList.add('mystery-cell');
+        cell.setAttribute('aria-label','Casilla misteriosa '+coord(i)+', sin revelar');
+        cell.innerHTML='<span class="mystery-label">?</span><span class="coord">'+coord(i)+'</span>';
+      }else{
+        cell.innerHTML='<span class="coord">'+coord(i)+'</span>';
+      }
+      cell.addEventListener('click',()=>{const wasRevealed=cell.dataset.revealed==='true';if(!wasRevealed&&running&&!ended){choose(i);playTone(bombIndices.has(i)?150:580,.065,bombIndices.has(i)?'sawtooth':'sine',.025);autoSaveGame();}});
+      boardEl.appendChild(cell);cells.push(cell);
+    }
+
+    // Place x2/x3 tiles only on ordinary cells; bombs, INMUNE and mystery tiles are excluded.
+    const ids=Array.from({length:100},(_,i)=>i)
+      .filter(i=>!bombIndices.has(i)&&i!==immuneIndex&&!mysteryIndices.has(i));
+    for(let i=ids.length-1;i>0;i--){const j=rand(i+1);[ids[i],ids[j]]=[ids[j],ids[i]];}
+    const x3Set=new Set(ids.slice(0,x3Count));
+    const x2Set=new Set(ids.slice(x3Count,x3Count+x2Count));
+    cells.forEach((c,i)=>{c.dataset.mult=x3Set.has(i)?'3':x2Set.has(i)?'2':'1';c.dataset.penalty='0';});
+    const penaltyCounts=level<=4?[3,1]:level<=8?[5,3]:level<=12?[9,5]:level<=19?[10,6]:[11,9];
+    const penaltyCandidates=ids.filter(i=>!x2Set.has(i)&&!x3Set.has(i));
+    for(let i=penaltyCandidates.length-1;i>0;i--){const j=rand(i+1);[penaltyCandidates[i],penaltyCandidates[j]]=[penaltyCandidates[j],penaltyCandidates[i]];}
+    penaltyCandidates.slice(0,penaltyCounts[0]).forEach(i=>{cells[i].dataset.penalty='1';});
+    penaltyCandidates.slice(penaltyCounts[0],penaltyCounts[0]+penaltyCounts[1]).forEach(i=>{cells[i].dataset.penalty='2';});
+
+    // Casillas especiales: mitad de puntos (2% máximo una) y x5.
+    const specialCandidates=ids.filter(i=>cells[i].dataset.mult==='1'&&cells[i].dataset.penalty==='0');
+    for(let i=specialCandidates.length-1;i>0;i--){const j=rand(i+1);[specialCandidates[i],specialCandidates[j]]=[specialCandidates[j],specialCandidates[i]];}
+    let candidateCursor=0;
+    if(Math.random()<0.02 && candidateCursor<specialCandidates.length){
+      const idx=specialCandidates[candidateCursor++], c=cells[idx];
+      c.dataset.special='half';c.classList.add('half-cell');
+      c.innerHTML='<span class="special-label">½</span><span class="coord">'+coord(idx)+'</span>';
+      c.setAttribute('aria-label','Casilla mitad de puntos '+coord(idx)+', sin revelar');
+    }
+    const x5Roll=Math.random();
+    const x5Count=x5Roll<0.20?1:x5Roll<0.30?2:x5Roll<0.35?3:x5Roll<0.36?4:0;
+    for(let n=0;n<x5Count&&candidateCursor<specialCandidates.length;n++){
+      const idx=specialCandidates[candidateCursor++], c=cells[idx];
+      c.dataset.special='x5';
+      c.innerHTML='<span class="coord">'+coord(idx)+'</span>';
+      c.setAttribute('aria-label','Casilla '+coord(idx)+', sin revelar');
+    }
+
+
+    // INMUNE and the three mystery tiles remain visually identical to normal cells.
+    x1Streak=0;x2Streak=0;x3Streak=0;
+  }
+  const ACHIEVEMENTS=[
+    ['first_step','Primer paso','Descubre tu primera casilla segura',s=>s.safePicks>=1],
+    ['ten_safe','Manos seguras','Descubre 10 casillas seguras',s=>s.safePicks>=10],
+    ['fifty_safe','Explorador','Descubre 50 casillas seguras',s=>s.safePicks>=50],
+    ['hundred_safe','Centenario','Descubre 100 casillas seguras',s=>s.safePicks>=100],
+    ['five_hundred_safe','Incansable','Descubre 500 casillas seguras',s=>s.safePicks>=500],
+    ['first_mystery','La curiosidad gana','Abre una casilla misteriosa',s=>s.mysteryPicks>=1],
+    ['five_mystery','Cazamisterios','Abre 5 casillas misteriosas',s=>s.mysteryPicks>=5],
+    ['twenty_mystery','Experto en misterios','Abre 20 casillas misteriosas',s=>s.mysteryPicks>=20],
+    ['first_boom','¡BOOM!','Encuentra una bomba por primera vez',s=>s.bombHits>=1],
+    ['ten_boom','Imán de bombas','Encuentra 10 bombas',s=>s.bombHits>=10],
+    ['level_two','En marcha','Llega al nivel 2',s=>s.highestLevel>=2],
+    ['level_five','Primer reto','Llega al nivel 5',s=>s.highestLevel>=5],
+    ['level_ten','Doble dígito','Llega al nivel 10',s=>s.highestLevel>=10],
+    ['level_fifteen','A mitad de camino','Llega al nivel 15',s=>s.highestLevel>=15],
+    ['level_twenty','Casi leyenda','Llega al nivel 20',s=>s.highestLevel>=20],
+    ['level_twentyfive','Campeón cromático','Llega al nivel 25',s=>s.highestLevel>=25],
+    ['clear_one','Nivel superado','Supera un nivel',s=>s.levelsCleared>=1],
+    ['clear_five','Progresando','Supera 5 niveles en total',s=>s.levelsCleared>=5],
+    ['clear_ten','Veterano','Supera 10 niveles en total',s=>s.levelsCleared>=10],
+    ['clear_twentyfive','Leyenda','Supera 25 niveles en total',s=>s.levelsCleared>=25],
+    ['points_25','Bolsillo lleno','Consigue 25 puntos en total',s=>s.pointsEarned>=25],
+    ['points_100','Centena de puntos','Consigue 100 puntos en total',s=>s.pointsEarned>=100],
+    ['points_500','Lluvia de puntos','Consigue 500 puntos en total',s=>s.pointsEarned>=500],
+    ['score_10','Buen comienzo','Alcanza 10 puntos en un nivel',s=>s.highestScore>=10],
+    ['score_25','Gran cosecha','Alcanza 25 puntos en un nivel',s=>s.highestScore>=25],
+    ['score_50','Montaña de puntos','Alcanza 50 puntos en un nivel',s=>s.highestScore>=50],
+    ['streak_x1_5','Racha encendida','Consigue una racha x1 de 5',s=>s.bestX1>=5],
+    ['streak_x1_10','Racha de fuego','Consigue una racha x1 de 10',s=>s.bestX1>=10],
+    ['streak_x1_20','Racha imparable','Consigue una racha x1 de 20',s=>s.bestX1>=20],
+    ['streak_x2_2','Doble seguido','Consigue 2 casillas x2 seguidas',s=>s.bestX2>=2],
+    ['streak_x2_5','Doble racha','Consigue 5 casillas x2 seguidas',s=>s.bestX2>=5],
+    ['streak_x3_2','Triple seguido','Consigue 2 casillas x3 seguidas',s=>s.bestX3>=2],
+    ['streak_x3_4','Triple amenaza','Consigue 4 casillas x3 seguidas',s=>s.bestX3>=4],
+    ['total_x1_25','Especialista x1','Acumula 25 casillas x1',s=>s.totalX1>=25],
+    ['total_x2_10','Fan del x2','Acumula 10 casillas x2',s=>s.totalX2>=10],
+    ['total_x3_10','Fan del x3','Acumula 10 casillas x3',s=>s.totalX3>=10],
+    ['immune_one','A salvo','Encuentra INMUNE',s=>s.immuneFound>=1],
+    ['immune_save','¡Salvado!','Usa INMUNE para sobrevivir a una bomba',s=>s.immunitySaved>=1],
+    ['penalty_one','Tropiezo','Activa una casilla que resta puntos',s=>s.minusTiles>=1],
+    ['penalty_ten','Zona peligrosa','Activa 10 casillas que restan puntos',s=>s.minusTiles>=10],
+    ['minus1_five','Peaje pequeño','Activa 5 casillas de −1',s=>s.penalty1Hits>=5],
+    ['minus2_five','Peaje doble','Activa 5 casillas de −2',s=>s.penalty2Hits>=5],
+    ['mystery_plus8','Ocho brillante','Consigue +8 en una misteriosa',s=>s.mysteryPlus8>=1],
+    ['mystery_plus20','Golpe de suerte','Consigue +20 en una misteriosa',s=>s.mysteryPlus20>=1],
+    ['mystery_minus20','Mala pata','Pierde 20 en una misteriosa',s=>s.mysteryMinus20>=1],
+    ['mystery_double','Doble fortuna','Duplica los puntos con una misteriosa',s=>s.mysteryDouble>=1],
+    ['mystery_loseall','Borrón y cuenta nueva','Pierde todos los puntos con una misteriosa',s=>s.mysteryLoseAll>=1],
+    ['save_one','Partida protegida','Guarda una partida',s=>s.saves>=1],
+    ['save_five','Siempre preparado','Guarda 5 partidas',s=>s.saves>=5],
+    ['three_games','A la tercera','Empieza 3 partidas',s=>s.gamesStarted>=3]
+  ];
+  function persistStats(){try{localStorage.setItem(STATS_KEY,JSON.stringify(lifetimeStats));localStorage.setItem(ACH_KEY,JSON.stringify([...unlockedAchievements]));}catch(e){}}
+  function showAchievementToast(achievement){
+    toastQueue.push(achievement);if(toastBusy)return;toastBusy=true;
+    const next=()=>{const a=toastQueue.shift();if(!a){toastBusy=false;return;} $('toastTitle').textContent='🏆 LOGRO DESBLOQUEADO: '+a[1];$('toastText').textContent=a[2];$('achievementToast').classList.add('show');setTimeout(()=>{$('achievementToast').classList.remove('show');setTimeout(next,350);},3600);};next();
+  }
+  function checkAchievements(){
+    const fresh=[];
+    for(const a of ACHIEVEMENTS){if(!unlockedAchievements.has(a[0])&&a[3](lifetimeStats)){unlockedAchievements.add(a[0]);fresh.push(a);}}
+    if(fresh.length){persistStats();fresh.forEach(showAchievementToast);renderAchievements();}
+  }
+  function renderAchievements(){
+    $('achievementCount').textContent='('+unlockedAchievements.size+'/50)';
+    $('achievementList').innerHTML=ACHIEVEMENTS.map(a=>{const unlocked=unlockedAchievements.has(a[0]);return '<article class="achievement '+(unlocked?'unlocked':'locked')+'"><div class="achievement-title">'+(unlocked?'🏆':'🔒')+' '+a[1]+'</div><div class="achievement-desc">'+a[2]+'</div><div class="achievement-status">'+(unlocked?'DESBLOQUEADO':'POR DESBLOQUEAR')+'</div></article>';}).join('');
+  }
+  function renderStatistics(){
+    const items=[['Mejor racha x1',lifetimeStats.bestX1],['Mejor racha x2',lifetimeStats.bestX2],['Mejor racha x3',lifetimeStats.bestX3],['Casillas seguras',lifetimeStats.safePicks],['Casillas misteriosas',lifetimeStats.mysteryPicks],['Bombas encontradas',lifetimeStats.bombHits],['Niveles superados',lifetimeStats.levelsCleared],['Nivel más alto',lifetimeStats.highestLevel],['Puntos sumados',lifetimeStats.pointsEarned],['Mayor puntuación de nivel',lifetimeStats.highestScore],['Casillas −1',lifetimeStats.penalty1Hits],['Casillas −2',lifetimeStats.penalty2Hits],['Premios +8',lifetimeStats.mysteryPlus8],['Premios +20',lifetimeStats.mysteryPlus20],['Multiplicadores misteriosos ×2',lifetimeStats.mysteryDouble],['Partidas guardadas',lifetimeStats.saves],['Logros desbloqueados',unlockedAchievements.size],['Partidas iniciadas',lifetimeStats.gamesStarted]];
+    $('statisticsGrid').innerHTML=items.map(i=>'<div class="stat-card"><span>'+i[0]+'</span><strong>'+i[1]+'</strong></div>').join('');
+  }
+  function updateHUD(){
+    $('levelStat').textContent=String(level).padStart(2,'0')+' / 25';
+    $('scoreStat').textContent=score;
+    $('targetStat').textContent=TARGETS[level-1];
+    $('safeStat').textContent=safeCount+' / '+Math.max(0,100-bombIndices.size);
+    $('levelBig').textContent=String(level).padStart(2,'0');
+    $('targetLabel').textContent='Objetivo: '+TARGETS[level-1]+' puntos';
+    $('progressFill').style.width=Math.min(100,score/TARGETS[level-1]*100)+'%';
+    $('record').textContent=record;
+    $('streakStat').textContent=x1Streak;
+    if(cells.length)autoSaveGame();
+  }
+  const SAVE_KEY='chroma_mine_saved_game_v2';
+  const SOUND_KEY='chroma_mine_sound_v1';
+  let soundEnabled=true,musicEnabled=false,audioContext=null,musicTimer=null,musicOscillators=[];
+  try{const prefs=JSON.parse(localStorage.getItem(SOUND_KEY)||'{}');soundEnabled=prefs.sound!==false;musicEnabled=prefs.music===true;}catch(e){}
+  function savePrefs(){try{localStorage.setItem(SOUND_KEY,JSON.stringify({sound:soundEnabled,music:musicEnabled}));}catch(e){}}
+  function getAudio(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!audioContext)audioContext=new C();if(audioContext.state==='suspended')audioContext.resume();return audioContext;}catch(e){return null;}}
+  function playTone(freq=520,duration=.07,type='sine',volume=.035){if(!soundEnabled)return;const ctx=getAudio();if(!ctx)return;try{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(freq,ctx.currentTime);g.gain.setValueAtTime(volume,ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+duration);}catch(e){}}
+  function stopMusic(){if(musicTimer){clearInterval(musicTimer);musicTimer=null;}musicOscillators.forEach(o=>{try{o.stop();}catch(e){}});musicOscillators=[];}
+  function startMusic(){stopMusic();if(!musicEnabled)return;const ctx=getAudio();if(!ctx)return;const notes=[196,246.94,293.66,246.94,174.61,220,261.63,220];let step=0;const play=()=>{if(!musicEnabled)return;const c=getAudio();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=notes[step++%notes.length];g.gain.value=.008;o.connect(g);g.connect(c.destination);o.start();g.gain.setTargetAtTime(.0001,c.currentTime+.35,.12);o.stop(c.currentTime+1.1);}catch(e){}};play();musicTimer=setInterval(play,900);}
+  function updateAudioButtons(){const sb=$('soundToggleBtn'),mb=$('musicToggleBtn');if(sb){sb.textContent=soundEnabled?'🔊 EFECTOS: ON':'🔇 EFECTOS: OFF';sb.setAttribute('aria-pressed',String(soundEnabled));}if(mb){mb.textContent=musicEnabled?'🎵 MÚSICA: ON':'🎵 MÚSICA: OFF';mb.setAttribute('aria-pressed',String(musicEnabled));}}
+  function autoSaveGame(){if(!cells.length)return;try{if(!running||ended){localStorage.removeItem(SAVE_KEY);return;}const save={level,score,safeCount,bombIndex,bombIndices:[...bombIndices],record,immuneIndex,immunityTurns,safePicksSinceClue,x1Streak,cells:cells.map(c=>({color:c.dataset.color,mult:c.dataset.mult,penalty:c.dataset.penalty||'0',special:c.dataset.special||'',revealed:c.dataset.revealed,immune:c.dataset.immune,mystery:c.dataset.mystery,className:c.className,disabled:c.disabled,innerHTML:c.innerHTML,background:c.style.background,filter:c.style.filter}))};localStorage.setItem(SAVE_KEY,JSON.stringify(save));}catch(e){}}
+  function saveGame(){
+    if(!running){setMessage('No hay partida activa','Empieza o continúa una partida antes de guardarla.','hint');return;}
+    const save={
+      level,score,safeCount,bombIndex,bombIndices:[...bombIndices],record,immuneIndex,immunityTurns,safePicksSinceClue,x1Streak,
+      cells:cells.map(c=>({
+        color:c.dataset.color,mult:c.dataset.mult,penalty:c.dataset.penalty||'0',special:c.dataset.special||'',revealed:c.dataset.revealed,immune:c.dataset.immune,mystery:c.dataset.mystery,
+        className:c.className,disabled:c.disabled,innerHTML:c.innerHTML,
+        background:c.style.background,filter:c.style.filter
+      }))
+    };
+    try{
+      localStorage.setItem(SAVE_KEY,JSON.stringify(save));
+      lifetimeStats.saves++;persistStats();checkAchievements();
+      setMessage('Partida guardada','Tu progreso queda guardado en este navegador. Podrás continuar otro día en este mismo dispositivo.','good');
+      saveBtn.textContent='✓ Partida guardada';
+      setTimeout(()=>{saveBtn.textContent='▣ Guardar partida';},1600);
+    }catch(e){
+      setMessage('No se pudo guardar','El navegador no permite guardar los datos. Prueba abriendo el archivo directamente en Chrome.','bad');
+    }
+  }
+  function loadGame(){
+    let save;
+    try{save=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){save=null;}
+    if(!save||!Array.isArray(save.cells)||save.cells.length!==100)return false;
+
+    level=Math.min(25,Math.max(1,Number(save.level)||1));
+    score=Math.max(0,Number(save.score)||0);
+    safeCount=Math.max(0,Number(save.safeCount)||0);
+    const savedBombIndex=Number.isInteger(save.bombIndex)&&save.bombIndex>=0&&save.bombIndex<100?save.bombIndex:-1;
+    const savedBombs=new Set(Array.isArray(save.bombIndices)?save.bombIndices.filter(n=>Number.isInteger(n)&&n>=0&&n<100):[savedBombIndex]);
+    if(savedBombIndex<0||!savedBombs.size)return false;
+    const savedImmuneIndex=Number.isInteger(save.immuneIndex)&&save.immuneIndex>=0&&save.immuneIndex<100?save.immuneIndex:-1;
+    immunityTurns=Math.max(0,Math.min(3,Number(save.immunityTurns)||0));
+    safePicksSinceClue=Math.max(0,Number(save.safePicksSinceClue)||0);
+    x1Streak=Math.max(0,Number(save.x1Streak)||0);x2Streak=0;x3Streak=0;
+    record=Math.max(record,Number(save.record)||1);
+
+    makeBoard();
+    bombIndex=savedBombIndex;
+    bombIndices=savedBombs;
+    immuneIndex=savedImmuneIndex;
+    save.cells.forEach((data,i)=>{
+      const c=cells[i];
+      if(!c)return;
+      c.dataset.color=data.color;
+      c.dataset.mult=data.mult;
+      c.dataset.penalty=data.penalty||'0';c.dataset.special=data.special||'';
+      c.dataset.revealed=data.revealed;
+      c.dataset.immune=data.immune||'false';
+      c.dataset.mystery=data.mystery||'false';
+      c.className=data.className||'cell';
+      if(c.dataset.mystery==='true' && c.dataset.revealed!=='true'){
+        c.classList.add('mystery-cell');
+        c.setAttribute('aria-label','Casilla misteriosa '+coord(i)+', sin revelar');
+        if(!c.querySelector('.mystery-label')) c.innerHTML='<span class="mystery-label">?</span><span class="coord">'+coord(i)+'</span>';
+      }
+      c.disabled=!!data.disabled;
+      c.innerHTML=data.innerHTML||'<span class="coord">'+coord(i)+'</span>';
+      c.style.background=data.background||COLORS[Number(data.color)||0].hex;
+      c.style.filter=data.filter||'';
+    });
+    running=true;ended=false;overlay.hidden=true;
+    updateHUD();
+    setMessage('Partida recuperada','Has retomado el nivel '+level+'. ¡Continúa con cuidado!','good');
+    return true;
+  }
+  function startGame(){
+    overlay.classList.remove('bomb-defeat');
+    level=1;score=0;safeCount=0;safePicksSinceClue=0;immunityTurns=0;x1Streak=0;x2Streak=0;x3Streak=0;running=true;ended=false;
+    lifetimeStats.gamesStarted++;lifetimeStats.highestLevel=Math.max(lifetimeStats.highestLevel,1);persistStats();checkAchievements();
+    makeBoard();updateHUD();overlay.hidden=true;
+    setMessage('Elige una casilla','Evita la bomba. Algunas casillas multiplican tus puntos.','');
+  }
+  function makeBurst(index){
+    const cell=cells[index], r=cell.getBoundingClientRect(), wr=$('burst').getBoundingClientRect();
+    const cx=r.left+r.width/2-wr.left,cy=r.top+r.height/2-wr.top;
+    $('burst').innerHTML='';
+    for(let i=0;i<26;i++){
+      const p=document.createElement('i');p.className='spark';
+      p.style.left=cx+'px';p.style.top=cy+'px';p.style.background=['#ffcf57','#ff6d47','#fff4bd','#e84e68'][i%4];
+      const a=Math.PI*2*i/26,dist=35+Math.random()*95;
+      p.style.setProperty('--dx',Math.cos(a)*dist+'px');p.style.setProperty('--dy',Math.sin(a)*dist+'px');
+      $('burst').appendChild(p);
+    }
+  }
+  function clueFor(index){
+    // Garantía: la casilla que parpadea NO es una bomba y existe al menos
+    // una bomba exactamente a 4 posiciones en horizontal, vertical o diagonal.
+    const candidates=[];
+    for(let i=0;i<100;i++){
+      if(bombIndices.has(i)) continue;
+      const clueCell=cells[i];
+      if(!clueCell || clueCell.dataset.revealed==='true') continue;
+      // No tapar la identificación de casillas especiales.
+      if(clueCell.dataset.mystery==='true' || i===immuneIndex) continue;
+      const r=Math.floor(i/10),c=i%10;
+      for(const bomb of bombIndices){
+        const br=Math.floor(bomb/10),bc=bomb%10;
+        const dr=br-r,dc=bc-c;
+        // La bomba puede estar a 1, 2, 3 o 4 casillas, en línea recta
+        // horizontal, vertical o diagonal; nunca a más de 4.
+        const aligned = (dr===0 && dc!==0) ||
+                        (dc===0 && dr!==0) ||
+                        (Math.abs(dr)===Math.abs(dc) && dr!==0);
+        const distance = Math.max(Math.abs(dr),Math.abs(dc));
+        if(aligned && distance>=1 && distance<=4){
+          candidates.push(i);
+          break;
+        }
+      }
+    }
+    if(candidates.length){
+      const clueIndex=candidates[rand(candidates.length)];
+      const clueCell=cells[clueIndex];
+      clueCell.classList.add('hint-cell');
+      clueCell.innerHTML='';
+      clueCell.setAttribute('aria-label','Pista: hay una bomba a un máximo de cuatro casillas en línea recta desde esta casilla, en horizontal, vertical o diagonal');
+      setMessage('¡PISTA!','Esta casilla parpadea porque hay una bomba a 1, 2, 3 o 4 casillas en horizontal, vertical o diagonal. Nunca está a más de 4.','hint');
+    }else{
+      setMessage('Pista','No hay una casilla disponible que pueda señalar una bomba a exactamente 4 casillas sin confundir la pista.','hint');
+    }
+  }
+  function choose(i){
+    if(!running||ended)return;
+    const cell=cells[i];if(!cell||cell.dataset.revealed==='true')return;
+    cell.dataset.revealed='true';cell.disabled=true;
+
+    if(bombIndices.has(i)){
+      if(immunityTurns>0){
+        lifetimeStats.immunitySaved++;lifetimeStats.safePicks++;persistStats();checkAchievements();
+        immunityTurns=0;
+        bombIndices.delete(i);
+        const available=[];
+        for(let j=0;j<100;j++){
+          if(j!==i&&j!==immuneIndex&&!bombIndices.has(j)&&cells[j].dataset.revealed!=='true')available.push(j);
+        }
+        if(available.length){
+          const replacement=available[rand(available.length)];
+          bombIndices.add(replacement);
+          bombIndex=[...bombIndices][0];
+        }
+        x1Streak=0;x2Streak=0;x3Streak=0;
+        lifetimeStats.pointsEarned+=1;lifetimeStats.highestScore=Math.max(lifetimeStats.highestScore,score+1);persistStats();checkAchievements();
+        cell.classList.add('safe');cell.style.background='#e8c85a';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:#241900">¡SALVADO!</span>';
+        cell.style.filter='saturate(.7) brightness(.9)';
+        safeCount++;score+=1;safePicksSinceClue++;
+        makeBurst(i);updateHUD();
+        setMessage('¡INMUNIDAD ACTIVADA!','Te has salvado de la bomba. Ha aparecido otra bomba en una casilla distinta; sigues en el mismo nivel.','good');
+        return;
+      }
+      x1Streak=0;x2Streak=0;x3Streak=0;lifetimeStats.bombHits++;lifetimeStats.highestLevel=Math.max(lifetimeStats.highestLevel,level);persistStats();checkAchievements();
+      cell.classList.add('boom');cell.style.background='#202432';
+      cell.innerHTML='<span style="font-size:clamp(15px,2.6vw,30px);position:relative;z-index:2">💣</span>';
+      makeBurst(i);running=false;ended=true;
+      if(cells[bombIndex])cells[bombIndex].style.animation='boomCell .48s ease-out forwards';
+      const impactLayer=$('bombImpactLayer'),impactBurst=$('bombImpactBurst');
+      const rect=cell.getBoundingClientRect();
+      impactBurst.style.left=(rect.left+rect.width/2)+'px';
+      impactBurst.style.top=(rect.top+rect.height/2)+'px';
+      impactLayer.style.setProperty('--blast-x',((rect.left+rect.width/2)/window.innerWidth*100)+'%');
+      impactLayer.style.setProperty('--blast-y',((rect.top+rect.height/2)/window.innerHeight*100)+'%');
+      impactLayer.hidden=false;
+      impactLayer.classList.remove('playing');
+      void impactLayer.offsetWidth;
+      impactLayer.classList.add('playing');
+      window.setTimeout(()=>{
+        impactLayer.hidden=true;
+        impactLayer.classList.remove('playing');
+        setMessage('¡BOOM! Has encontrado la bomba','La racha termina aquí. Has llegado al nivel '+level+'. Tu récord guarda tu mejor nivel.','bad');
+        overlay.classList.add('bomb-defeat');
+        overlay.hidden=false;
+        overlay.querySelector('.overlay-icon').textContent='💥';
+        overlay.querySelector('h2').textContent='¡BOOM!';
+        overlay.querySelector('p').textContent='Has encontrado una bomba en '+coord(i)+'. Has llegado al nivel '+level+'. Pulsa para volver a intentarlo desde el nivel 1.';
+        startBtn.textContent='REINTENTAR DESDE NIVEL 1';
+      },1150);
+      return;
+    }
+
+    const foundImmune=cell.dataset.immune==='true';
+    const foundMystery=cell.dataset.mystery==='true';
+     const foundHalf=cell.dataset.special==='half';
+     const foundX5=cell.dataset.special==='x5';
+    lifetimeStats.safePicks++;if(foundMystery)lifetimeStats.mysteryPicks++;if(foundImmune){lifetimeStats.immuneFound++;}
+    if(foundImmune){
+      immunityTurns=3;
+      cell.dataset.immune='used';
+    }
+
+    safeCount++;
+    safePicksSinceClue++;
+    let earned=0, mysteryMessage='';
+    if(foundMystery){
+      // 10 resultados comunes con igual probabilidad (8% cada uno).
+      // 4 resultados raros al 5%: perder todo, +20, -20 o duplicar puntos.
+      x1Streak=0;x2Streak=0;x3Streak=0;
+      const roll=Math.random();
+      const commonChance=0.08;
+      if(roll<commonChance*5){
+        const amount=Math.floor(roll/commonChance)+1;
+        score+=amount;earned=amount;
+        mysteryMessage='¡MISTERIO! Has sumado '+amount+' punto'+(amount===1?'':'s')+'.';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">+'+amount+'</span>';
+      }else if(roll<commonChance*9){
+        const amount=Math.floor((roll-commonChance*5)/commonChance)+1;
+        score=Math.max(0,score-amount);earned=-amount;
+        mysteryMessage='¡MISTERIO! Has perdido '+amount+' punto'+(amount===1?'':'s')+'.';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">−'+amount+'</span>';
+      }else if(roll<0.80){
+        score+=8;earned=8;lifetimeStats.mysteryPlus8++;
+        mysteryMessage='¡MISTERIO! ¡Has conseguido +8 puntos!';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">+8</span>';
+      }else if(roll<0.85){
+        score=0;earned=0;lifetimeStats.mysteryLoseAll++;
+        mysteryMessage='¡MALA SUERTE! Has perdido todos los puntos de este nivel.';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">0</span>';
+      }else if(roll<0.90){
+        score+=20;earned=20;lifetimeStats.mysteryPlus20++;
+        mysteryMessage='¡PREMIO RARO! Has sumado 20 puntos.';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">+20</span>';
+      }else if(roll<0.95){
+        score=Math.max(0,score-20);earned=-20;lifetimeStats.mysteryMinus20++;
+        mysteryMessage='¡MALA SUERTE! Has perdido 20 puntos (la puntuación no baja de 0).';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">−20</span>';
+      }else{
+        const before=score;lifetimeStats.mysteryDouble++;
+        score=score*2;
+        earned=score-before;
+        mysteryMessage='¡MULTIPLICADOR MISTERIOSO! Se duplican tus puntos de este nivel: '+before+' → '+score+'.';
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">×2</span>';
+      }
+      cell.style.background='#8e54e9';
+    }else if(foundHalf){
+      x1Streak=0;x2Streak=0;x3Streak=0;
+      const before=score;score=Math.floor(score/2);earned=score-before;
+      cell.style.background='linear-gradient(145deg,#ff6688,#a51646)';
+      cell.innerHTML='<span class="special-label">÷2</span>';
+      mysteryMessage='¡CASILLA MITAD! Tus puntos actuales se reducen a la mitad: '+before+' → '+score+'.';
+    }else if(foundX5){
+      x1Streak=0;x2Streak=0;x3Streak=0;
+      score+=5;earned=5;
+      cell.style.background=COLORS[Number(cell.dataset.color)||0].hex;
+      cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(10px,1.8vw,19px);font-weight:1000;color:white;text-shadow:0 2px 4px #0008">+5</span>';
+      mysteryMessage='¡CASILLA x5! Has conseguido 5 puntos.';
+    }else if(Number(cell.dataset.penalty)>0){
+      const penalty=Number(cell.dataset.penalty);
+      score=Math.max(0,score-penalty);earned=-penalty;x1Streak=0;x2Streak=0;x3Streak=0;
+      lifetimeStats.minusTiles++;if(penalty===1)lifetimeStats.penalty1Hits++;else lifetimeStats.penalty2Hits++;
+      cell.style.background=penalty===1?'#b93c56':'#74253e';
+      cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(10px,1.8vw,19px);font-weight:1000;color:white">−'+penalty+'</span>';
+    }else{
+      const mult=Number(cell.dataset.mult)||1;
+      let streakBonus=0;
+      if(mult===1){x1Streak++;x2Streak=0;x3Streak=0;lifetimeStats.totalX1++;if(x1Streak>=5)streakBonus=x1Streak-4;earned=1+streakBonus;}
+      else if(mult===2){x2Streak++;x1Streak=0;x3Streak=0;lifetimeStats.totalX2++;earned=2;}
+      else{x3Streak++;x1Streak=0;x2Streak=0;lifetimeStats.totalX3++;earned=3;}
+      lifetimeStats.bestX1=Math.max(lifetimeStats.bestX1,x1Streak);lifetimeStats.bestX2=Math.max(lifetimeStats.bestX2,x2Streak);lifetimeStats.bestX3=Math.max(lifetimeStats.bestX3,x3Streak);
+      score+=earned;
+      if(foundImmune)cell.style.background='#e8c85a';
+      if(foundImmune){
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(8px,1.15vw,13px);font-weight:1000;color:#241900">INMUNE<br>3 TURNOS</span>';
+      }else if(streakBonus>0){
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(9px,1.5vw,16px);font-weight:1000;color:white">+'+earned+'<small style="display:block;font-size:8px">RACHA +'+streakBonus+'</small></span>';
+      }else{
+        cell.innerHTML='<span style="position:relative;z-index:2;font-size:clamp(10px,1.8vw,19px);font-weight:1000;color:white;text-shadow:0 2px 4px #0008">+'+earned+'</span>';
+      }
+    }
+
+    cell.classList.add('safe');
+    cell.style.filter='saturate(.7) brightness(.78)';
+    if(level>record){record=level;try{localStorage.setItem('chroma_mine_record',String(record));}catch(e){}}
+    // The INMUNE tile grants three subsequent picks; the tile itself does not consume a turn.
+    if(immunityTurns>0&&!foundImmune)immunityTurns--;
+    lifetimeStats.pointsEarned+=Math.max(0,earned);lifetimeStats.highestScore=Math.max(lifetimeStats.highestScore,score);lifetimeStats.highestLevel=Math.max(lifetimeStats.highestLevel,level);persistStats();checkAchievements();
+    updateHUD();
+
+    if(score>=TARGETS[level-1]){
+      lifetimeStats.levelsCleared++;persistStats();checkAchievements();
+      setMessage('¡NIVEL SUPERADO!','Has conseguido '+score+' puntos. ¡Vamos al nivel '+Math.min(25,level+1)+'!','good');
+      if(level===25){
+        running=false;ended=true;
+        overlay.hidden=false;overlay.querySelector('.overlay-icon').textContent='🏆';
+        overlay.querySelector('h2').textContent='¡CAMPEÓN!';
+        overlay.querySelector('p').textContent='Has superado los 25 niveles. ¡Impresionante! Tu récord se ha actualizado.';
+        startBtn.textContent='JUGAR OTRA VEZ';return;
+      }
+      level++;score=0;safeCount=0;safePicksSinceClue=0;x1Streak=0;x2Streak=0;x3Streak=0;lifetimeStats.highestLevel=Math.max(lifetimeStats.highestLevel,level);persistStats();checkAchievements();
+      if(level>record){record=level;try{localStorage.setItem('chroma_mine_record',String(record));}catch(e){}}
+      makeBoard();updateHUD();
+      setMessage('Nivel '+level+' — nueva cuadrícula','Objetivo: '+TARGETS[level-1]+' puntos. ¡Cuidado, hay más multiplicadores!','good');
+    }else if(safePicksSinceClue>=10){
+      safePicksSinceClue=0;
+      clueFor(i);
+    }else if(Number(cell.dataset.penalty)>0){
+      const penalty=Number(cell.dataset.penalty);
+      setMessage('¡CASILLA TRAMPA!','Has perdido '+penalty+' punto'+(penalty===1?'':'s')+'. La puntuación no baja de cero.','bad');
+    }else if(foundMystery){
+      setMessage('CASILLA MISTERIOSA',mysteryMessage,'hint');
+    }else if(foundHalf){
+      setMessage('¡CASILLA MITAD DE PUNTOS!',mysteryMessage,'bad');
+    }else if(foundX5){
+      setMessage('¡CASILLA x5!',mysteryMessage,'good');
+    }else if(foundImmune){
+      setMessage('¡HAS ENCONTRADO INMUNE!','Tienes protección durante las tres próximas casillas que pulses. Si encuentras una bomba, te salvarás y la bomba reaparecerá en otro lugar.','good');
+    }else if(x1Streak>=5&&Number(cell.dataset.mult)===1){
+      setMessage('¡RACHA DE ACIERTOS!','Llevas '+x1Streak+' casillas x1 seguidas. Has ganado '+(x1Streak-4)+' puntos extra en esta casilla.','good');
+    }else{
+      setMessage('Casilla segura','+'+earned+' punto'+(earned===1?'':'s')+'. Racha x1: '+x1Streak+'. Desde la 5.ª casilla x1 seguida ganas puntos extra crecientes.','good');
+    }
+  }
+  const openAchievements=()=>{renderAchievements();achievementsModal.hidden=false;};
+  const openStatistics=()=>{renderStatistics();statisticsModal.hidden=false;};
+  achievementsBtn.addEventListener('click',openAchievements);$('achievementsSideBtn').addEventListener('click',openAchievements);
+  statisticsBtn.addEventListener('click',openStatistics);$('statisticsSideBtn').addEventListener('click',openStatistics);
+  $('closeAchievements').addEventListener('click',()=>{achievementsModal.hidden=true;});
+  $('closeStatistics').addEventListener('click',()=>{statisticsModal.hidden=true;});
+  [achievementsModal,statisticsModal].forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.hidden=true;}));
+  renderAchievements();renderStatistics();
+  startBtn.addEventListener('click',()=>{if(startBtn.dataset.action==='continue'&&loadGame()){startBtn.dataset.action='';startBtn.textContent='EMPEZAR PARTIDA';return;}overlay.querySelector('.overlay-icon').textContent='💎';overlay.querySelector('h2').textContent='¿TE LA JUEGAS?';overlay.querySelector('p').textContent='100 casillas de colores. Evita las bombas, encuentra INMUNE para protegerte durante las tres próximas casillas y supera 25 niveles.';startBtn.textContent='EMPEZAR PARTIDA';startBtn.dataset.action='';startGame();autoSaveGame();});
+  saveBtn.addEventListener('click',saveGame);
+  $('soundToggleBtn').addEventListener('click',()=>{soundEnabled=!soundEnabled;savePrefs();updateAudioButtons();if(soundEnabled)playTone(680,.08);});
+  $('musicToggleBtn').addEventListener('click',()=>{musicEnabled=!musicEnabled;savePrefs();updateAudioButtons();if(musicEnabled)startMusic();else stopMusic();});
+  $('fullscreenBtn').addEventListener('click',async()=>{try{if(!document.fullscreenElement){await document.documentElement.requestFullscreen();$('fullscreenBtn').textContent='⛶ SALIR DE PANTALLA COMPLETA';}else{await document.exitFullscreen();$('fullscreenBtn').textContent='⛶ PANTALLA COMPLETA';}}catch(e){setMessage('Pantalla completa no disponible','Tu navegador o dispositivo no permite activar este modo desde aquí.','hint');}});
+  document.addEventListener('fullscreenchange',()=>{$('fullscreenBtn').textContent=document.fullscreenElement?'⛶ SALIR DE PANTALLA COMPLETA':'⛶ PANTALLA COMPLETA';});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')autoSaveGame();});
+  window.addEventListener('pagehide',autoSaveGame);
+  updateAudioButtons();if(musicEnabled)document.addEventListener('click',()=>{if(musicEnabled&&!musicTimer)startMusic();},{once:true});
+  try{if(localStorage.getItem(SAVE_KEY)){startBtn.textContent='CONTINUAR PARTIDA GUARDADA';startBtn.dataset.action='continue';overlay.querySelector('p').textContent='Hay una partida guardada en este navegador. Pulsa para continuar o reinicia si prefieres empezar de cero.';}}catch(e){}
+  restartBtn.addEventListener('click',()=>{
+    overlay.hidden=false;overlay.querySelector('.overlay-icon').textContent='🔄';
+    overlay.querySelector('h2').textContent='¿REINICIAR?';
+    overlay.querySelector('p').textContent='La racha actual se perderá. Empezarás de nuevo desde el nivel 1.';
+    startBtn.textContent='SÍ, REINICIAR';
+  });
+  $('resetAllDataBtn').addEventListener('click',()=>{
+    const accepted=window.confirm('¿BORRAR TODOS LOS DATOS DE CHROMA MINE?\\n\\nSe eliminarán la partida guardada, las estadísticas, todos los logros desbloqueados y el récord. Esta acción no se puede deshacer.');
+    if(!accepted)return;
+    try{
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(STATS_KEY);
+      localStorage.removeItem(ACH_KEY);
+      localStorage.removeItem('chroma_mine_record');
+    }catch(e){}
+    lifetimeStats=freshStats();
+    unlockedAchievements=new Set();
+    toastQueue=[];toastBusy=false;
+    record=1;level=1;score=0;safeCount=0;safePicksSinceClue=0;
+    immunityTurns=0;immuneIndex=-1;x1Streak=0;x2Streak=0;x3Streak=0;
+    running=false;ended=false;
+    $('record').textContent='1';
+    persistStats();
+    makeBoard();updateHUD();
+    overlay.hidden=false;
+    overlay.querySelector('.overlay-icon').textContent='💎';
+    overlay.querySelector('h2').textContent='DATOS REINICIADOS';
+    overlay.querySelector('p').textContent='Partida, estadísticas, logros y récord borrados. Empieza una nueva partida cuando quieras.';
+    startBtn.textContent='EMPEZAR PARTIDA';
+    delete startBtn.dataset.action;
+    setMessage('Todo reiniciado','Se han borrado todos los datos guardados de CHROMA MINE.','good');
+    achievementsModal.hidden=true;statisticsModal.hidden=true;
+    $('resetAllDataBtn').textContent='✓ DATOS BORRADOS';
+    window.setTimeout(()=>{$('resetAllDataBtn').textContent='⟲ BORRAR TODOS LOS DATOS';},1800);
+  });
+  const introScreen=$('introScreen'),introContinue=$('introContinue');
+  let introDismissed=false;
+  function continuePastIntro(){
+    if(introDismissed)return;
+    introDismissed=true;
+    introScreen.classList.add('leaving');
+    introContinue.disabled=true;
+    window.setTimeout(()=>{introScreen.hidden=true;introScreen.classList.remove('leaving');},430);
+  }
+  introContinue.addEventListener('click',continuePastIntro);
+  window.addEventListener('keydown',event=>{
+    if(!introDismissed && (event.code==='Space'||event.code==='Enter')){
+      event.preventDefault();
+      continuePastIntro();
+    }
+  });
+  updateHUD();
+})();
+</script>
+</body>
+</html>
